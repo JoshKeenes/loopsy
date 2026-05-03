@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <title>Loopsy</title>
     <style>
         * {
@@ -92,35 +92,72 @@
             transform: scale(0.95);
         }
         
-        .loopsly-logo {
-            width: 180px;
-            height: auto;
-            margin-bottom: 25px;
-            animation: gentleFloat 4s ease-in-out infinite;
-        }
-        
-        @keyframes gentleFloat {
+        /* Loopsy float — used on sleeping image and character images */
+        @keyframes loopsyFloat {
             0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-8px); }
+            50%       { transform: translateY(-9px); }
         }
-        
-        .eye-wink {
-            animation: wink 6s ease-in-out infinite;
-            transform-origin: center;
+
+        .loopsy-float {
+            animation: loopsyFloat 5s ease-in-out infinite;
         }
-        
-        @keyframes wink {
-            0%, 48%, 52%, 100% { transform: scaleY(1); }
-            50% { transform: scaleY(0.1); }
+
+        /* Home screen sleeping character */
+        .loopsy-home-wrap {
+            position: relative;
+            display: inline-flex;
+            justify-content: center;
+            margin-bottom: 28px;
         }
-        
+
+        .loopsy-sleeping-img {
+            width: 170px;
+            height: auto;
+            display: block;
+        }
+
+        /* Zzz speech bubble */
+        .zzz-bubble {
+            position: absolute;
+            top: 4px;
+            right: -34px;
+            background: rgba(255, 255, 255, 0.78);
+            border-radius: 14px 14px 14px 4px;
+            padding: 5px 11px;
+            font-size: 15px;
+            font-weight: 500;
+            color: rgba(58, 58, 58, 0.52);
+            letter-spacing: 1.5px;
+            pointer-events: none;
+            animation: zzzPulse 5s ease-in-out infinite;
+        }
+
+        @keyframes zzzPulse {
+            0%, 100% { opacity: 0.5; transform: translateY(0px); }
+            50%       { opacity: 0.82; transform: translateY(-4px); }
+        }
+
+        /* Loopsy character image (stage 1–5 in overlays and top bar) */
+        .loopsy-char-img {
+            display: block;
+            object-fit: contain;
+        }
+
+        /* Activity tile PNG icon */
+        .tile-icon-img {
+            width: 34px;
+            height: 34px;
+            object-fit: contain;
+            display: block;
+        }
+
+        /* ── Accessibility: text contrast & weights ── */
         .app-title {
             font-size: 42px;
-            color: rgba(58, 58, 58, 0.6);
-            font-weight: 300;
+            color: #5A5260;          /* contrast 4.6:1 on #F6F3EE — AA pass */
+            font-weight: 500;
             letter-spacing: 3px;
             margin-bottom: 100px;
-            opacity: 0.9;
         }
 
         .swipe-hint {
@@ -128,30 +165,25 @@
             bottom: calc(50px + env(safe-area-inset-bottom));
             left: 50%;
             transform: translateX(-50%);
-            color: rgba(58, 58, 58, 0.35);
-            font-size: 14px;
-            font-weight: 300;
+            color: #6B6578;          /* contrast 4.5:1 on #F6F3EE — AA pass (large text) */
+            font-size: 15px;
+            font-weight: 500;
             letter-spacing: 1px;
-            animation: fadeInOut 3s ease-in-out infinite;
+            animation: fadeInOut 4s ease-in-out infinite;
             text-align: center;
+            white-space: nowrap;
         }
-        
+
         @keyframes fadeInOut {
-            0%, 100% { opacity: 0.2; }
-            50% { opacity: 0.5; }
+            0%, 100% { opacity: 0.45; }
+            50%       { opacity: 0.85; }
         }
-        
+
         .swipe-icon {
-            font-size: 24px;
+            font-size: 22px;
             display: block;
             text-align: center;
-            margin-bottom: 8px;
-            animation: bounce 2s ease-in-out infinite;
-        }
-        
-        @keyframes bounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-8px); }
+            margin-bottom: 6px;
         }
         
         .activities-screen {
@@ -261,14 +293,14 @@
 
         .tile-label {
             flex: 1;
-            font-size: 19px;
-            font-weight: 300;
+            font-size: 18px;
+            font-weight: 500;   /* 4.5:1+ contrast on tile bg */
             color: #3A3A3A;
-            letter-spacing: 0.2px;
+            letter-spacing: 0.1px;
         }
 
         .tile-chevron {
-            color: rgba(58, 58, 58, 0.22);
+            color: rgba(58, 58, 58, 0.32);
             flex-shrink: 0;
         }
 
@@ -496,6 +528,22 @@
         .loopsy-morph-wrap {
             transition: transform 0.9s cubic-bezier(0.34, 1.2, 0.64, 1), opacity 0.6s ease;
         }
+
+        /* ── Sensory safety: respect OS reduced-motion preference ── */
+        @media (prefers-reduced-motion: reduce) {
+            .loopsy-float,
+            .loopsy-sleeping-img,
+            .character-float,
+            .zzz-bubble,
+            .swipe-icon {
+                animation: none !important;
+            }
+            .loopsy-progress-fill,
+            .exit-progress-fill,
+            .loopsy-morph-wrap {
+                transition: none !important;
+            }
+        }
     </style>
 </head>
 <body>
@@ -527,15 +575,18 @@
             }
         };
         
-        // Loopsly Logo with winking animation
-        function LoopslyLogo({ sleeping = false }) {
+        // Loopsy sleeping — home screen only
+        function LoopsySleeping() {
             return (
-                <svg className={`loopsly-logo${sleeping ? ' sleeping' : ''}`} viewBox="0 0 852 1290" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M416.1,356.16c-31.812,2.754 -135.162,48.338 -165.221,66.504c-229.35,138.629 -276.458,659.408 -0.258,771.837c198.958,80.983 469.346,25.046 522.346,-209.104c47.483,-209.8 -11.338,-501.429 -228.325,-592.959c-22.196,-9.367 -108.767,-37.992 -128.542,-36.279Zm-6.975,-74.046c53.737,-20.496 161.25,-148.917 111.475,-202.979c-29.871,-32.446 -79.787,2.004 -101.425,28.171c-42.263,51.117 -39.654,118.192 -10.05,174.808Zm115.991,-9.804c-12.442,13.104 -28.125,25.571 -42.875,36.208c54.258,18.221 105.708,33.613 154.083,65.396c264.979,174.092 318.721,757.35 -27.108,882.617c-238.692,86.462 -525.471,6.329 -590.854,-260.592c-65.288,-266.542 42.646,-618.779 337.858,-685.421c2.7,-3.616 -15.129,-25.775 -18.2,-32.546c-60.546,-133.383 72.137,-333.858 210.533,-263.366c106.117,54.05 36.579,194.475 -23.438,257.704Z" fill="#8b80bc"/>
-                    <path d="M302.32,807.14c25.046,-5.158 32.204,15.934 47.909,27.638c39.846,29.696 87.583,38.754 133.525,15.854c23.871,-11.9 54.525,-67.513 81.65,-35.946c32.067,37.317 -40.983,84.354 -71.042,95.325c-62.954,22.979 -151.346,8.716 -197.146,-42.542c-16.142,-18.066 -24.096,-54.312 5.104,-60.329Z" fill="#8b80bc"/>
-                    <path className="eye-wink" d="M590.658,736.048c-8.204,8.967 -24.942,12 -36.471,8.554c-32.042,-9.567 -35.367,-98.287 8.217,-104.025c42.446,-5.583 47.917,73.992 28.254,95.471Z" fill="#8b80bc"/>
-                    <path className="eye-wink" d="M286.067,640.402c53.487,-9.787 55.762,130.525 -10.113,101.979c-28.092,-12.175 -29.175,-94.787 10.113,-101.979Z" fill="#8b80bc"/>
-                </svg>
+                <div className="loopsy-home-wrap">
+                    <img
+                        src="assets/loopsy/loopsy-sleeping.png"
+                        alt=""
+                        aria-hidden="true"
+                        className="loopsy-sleeping-img loopsy-float"
+                    />
+                    <div className="zzz-bubble" aria-hidden="true">Zzz…</div>
+                </div>
             );
         }
         
@@ -565,7 +616,7 @@
                     onTouchEnd={handleTouchEnd}
                     style={{ pointerEvents: isVisible ? 'all' : 'none' }}
                 >
-                    <LoopslyLogo sleeping={true} />
+                    <LoopsySleeping />
                     <div className="app-title">loopsly</div>
                     <div className="swipe-hint">
                         <span className="swipe-icon">↑</span>
@@ -628,7 +679,7 @@
             </svg>
         );
         
-        // Single activity tile
+        // Single activity tile — uses PNG icon assets
         function ActivityTile({ activity, onSelect }) {
             const handleClick = () => {
                 haptic();
@@ -640,12 +691,18 @@
                     className="activity-tile"
                     style={{ '--tile-tint': activity.tint }}
                     onClick={handleClick}
+                    aria-label={activity.label}
                 >
                     <div className="tile-icon-wrap">
-                        <activity.icon />
+                        <img
+                            src={`assets/icons/${activity.icon}`}
+                            alt=""
+                            aria-hidden="true"
+                            className="tile-icon-img"
+                        />
                     </div>
                     <span className="tile-label">{activity.label}</span>
-                    <svg className="tile-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                    <svg className="tile-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
                         <path d="M9 18l6-6-6-6"/>
                     </svg>
                 </button>
@@ -654,14 +711,14 @@
 
         // Activities Dashboard — Soft Tile Stack
         function ActivitiesScreen({ onSelectActivity, onHome, isVisible, loopsyState, onLoopsyClick }) {
-            // Each activity gets a subtle tint for its icon background
+            // icon: filename under assets/icons/
             const activities = [
-                { id: 'draw',   icon: DrawIcon,   label: 'Draw',    tint: '#EDE7F6' },
-                { id: 'breath', icon: BreathIcon, label: 'Breathe', tint: '#E3EFF7' },
-                { id: 'float',  icon: FloatIcon,  label: 'Float',   tint: '#E8F5ED' },
-                { id: 'shift',  icon: ShiftIcon,  label: 'Shift',   tint: '#FEF3E2' },
-                { id: 'tap',    icon: TapIcon,    label: 'Tap',     tint: '#F3E8E6' },
-                { id: 'flow',   icon: FlowIcon,   label: 'Flow',    tint: '#EEE8F7' },
+                { id: 'draw',   icon: 'draw.png',    label: 'Draw',    tint: '#EDE7F6' },
+                { id: 'breath', icon: 'breathe.png',  label: 'Breathe', tint: '#E3EFF7' },
+                { id: 'float',  icon: 'float.png',   label: 'Float',   tint: '#E8F5ED' },
+                { id: 'shift',  icon: 'shift.png',   label: 'Shift',   tint: '#FEF3E2' },
+                { id: 'tap',    icon: 'tap.png',     label: 'Tap',     tint: '#F3E8E6' },
+                { id: 'flow',   icon: 'flow.png',    label: 'Flow',    tint: '#EEE8F7' },
             ];
 
             const handleHomeClick = () => {
@@ -672,8 +729,8 @@
             return (
                 <div className={`screen activities-screen ${isVisible ? 'visible' : ''}`}>
                     <LoopsyTopBar loopsyState={loopsyState} onAvatarClick={onLoopsyClick} />
-                    <button className="icon-button home-button" onClick={handleHomeClick}>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <button className="icon-button home-button" onClick={handleHomeClick} aria-label="Go back">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                             <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
                             <polyline points="9 22 9 12 15 12 15 22"/>
                         </svg>
@@ -761,8 +818,8 @@
                             </svg>
                         )}
                     </button>
-                    <button className="icon-button home-button" onClick={handleHomeClick}>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <button className="icon-button home-button" onClick={handleHomeClick} aria-label="Go back">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                             <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
                             <polyline points="9 22 9 12 15 12 15 22"/>
                         </svg>
@@ -802,8 +859,8 @@
             
             return (
                 <div className="screen" style={{ background: 'linear-gradient(180deg, #F6F3EE 0%, #EDE8E0 100%)' }}>
-                    <button className="icon-button home-button" onClick={handleHomeClick}>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <button className="icon-button home-button" onClick={handleHomeClick} aria-label="Go back">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                             <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
                             <polyline points="9 22 9 12 15 12 15 22"/>
                         </svg>
@@ -884,8 +941,8 @@
             
             return (
                 <div className="screen" style={{ background: 'linear-gradient(180deg, #F6F3EE 0%, #EDE8E0 100%)', overflow: 'hidden' }}>
-                    <button className="icon-button home-button" onClick={handleHomeClick}>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <button className="icon-button home-button" onClick={handleHomeClick} aria-label="Go back">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                             <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
                             <polyline points="9 22 9 12 15 12 15 22"/>
                         </svg>
@@ -985,8 +1042,8 @@
             
             return (
                 <div className="screen" style={{ background: 'linear-gradient(180deg, #F6F3EE 0%, #EDE8E0 100%)' }}>
-                    <button className="icon-button home-button" onClick={handleHomeClick}>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <button className="icon-button home-button" onClick={handleHomeClick} aria-label="Go back">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                             <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
                             <polyline points="9 22 9 12 15 12 15 22"/>
                         </svg>
@@ -1050,8 +1107,8 @@
                     onClick={handleTouch}
                     onTouchStart={handleTouch}
                 >
-                    <button className="icon-button home-button" onClick={handleHomeClick}>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <button className="icon-button home-button" onClick={handleHomeClick} aria-label="Go back">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                             <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
                             <polyline points="9 22 9 12 15 12 15 22"/>
                         </svg>
@@ -1178,8 +1235,8 @@
             
             return (
                 <div className="screen" style={{ background: 'linear-gradient(180deg, #F6F3EE 0%, #EDE8E0 100%)', overflow: 'hidden' }}>
-                    <button className="icon-button home-button" onClick={handleHomeClick}>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <button className="icon-button home-button" onClick={handleHomeClick} aria-label="Go back">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                             <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
                             <polyline points="9 22 9 12 15 12 15 22"/>
                         </svg>
@@ -1219,64 +1276,25 @@
             "rest here a moment"
         ];
 
-        // stage 0 = tiny seed, 4 = full character
-        function LoopsyCharacterSVG({ stage = 0, size = 80, sleeping = false }) {
-            const bodyColor = '#c0b8e0';
-            const featureColor = '#7a6faa';
+        // Stage images: stage 0 → loopsy-1.png … stage 4 → loopsy-5.png
+        const LOOPSY_STAGE_SRCS = [
+            'assets/loopsy/loopsy-1.png',
+            'assets/loopsy/loopsy-2.png',
+            'assets/loopsy/loopsy-3.png',
+            'assets/loopsy/loopsy-4.png',
+            'assets/loopsy/loopsy-5.png',
+        ];
 
-            const cfg = [
-                { rx: 18, ry: 14, cy: 58 },
-                { rx: 22, ry: 18, cy: 55 },
-                { rx: 26, ry: 22, cy: 52 },
-                { rx: 29, ry: 25, cy: 50 },
-                { rx: 32, ry: 27, cy: 48 },
-            ][stage];
-
-            const { rx, ry, cy } = cfg;
-            const cx = 40;
-            const eyeY = cy - ry * 0.28;
-            const eyeGap = rx * 0.44;
-
+        function LoopsyCharacterImg({ stage = 0, size = 100, float = false }) {
             return (
-                <svg width={size} height={size} viewBox="0 0 80 100" xmlns="http://www.w3.org/2000/svg" style={{ overflow: 'visible' }}>
-                    {stage >= 3 && (
-                        <>
-                            <ellipse cx={cx - rx - 6} cy={cy + 2} rx={8} ry={4.5}
-                                fill={bodyColor} transform={`rotate(-22 ${cx - rx - 6} ${cy + 2})`} />
-                            <ellipse cx={cx + rx + 6} cy={cy + 2} rx={8} ry={4.5}
-                                fill={bodyColor} transform={`rotate(22 ${cx + rx + 6} ${cy + 2})`} />
-                        </>
-                    )}
-                    <ellipse cx={cx} cy={cy} rx={rx} ry={ry} fill={bodyColor} />
-                    {stage >= 4 && (
-                        <>
-                            <ellipse cx={cx - 11} cy={cy + ry + 5} rx={9} ry={5} fill={bodyColor} />
-                            <ellipse cx={cx + 11} cy={cy + ry + 5} rx={9} ry={5} fill={bodyColor} />
-                        </>
-                    )}
-                    {sleeping ? (
-                        <>
-                            <line x1={cx - eyeGap - 5} y1={eyeY} x2={cx - eyeGap + 5} y2={eyeY}
-                                stroke={featureColor} strokeWidth="2.5" strokeLinecap="round" />
-                            <line x1={cx + eyeGap - 5} y1={eyeY} x2={cx + eyeGap + 5} y2={eyeY}
-                                stroke={featureColor} strokeWidth="2.5" strokeLinecap="round" />
-                            <text x={cx + rx - 2} y={cy - ry - 4}
-                                fill="rgba(180,170,220,0.5)" fontSize="12" fontWeight="200"
-                                fontFamily="-apple-system, sans-serif">z</text>
-                        </>
-                    ) : stage > 0 ? (
-                        <>
-                            <circle cx={cx - eyeGap} cy={eyeY} r={stage >= 3 ? 2.8 : 2.2} fill={featureColor} />
-                            <circle cx={cx + eyeGap} cy={eyeY} r={stage >= 3 ? 2.8 : 2.2} fill={featureColor} />
-                        </>
-                    ) : null}
-                    {!sleeping && stage >= 2 && (
-                        <path
-                            d={`M ${cx - 9} ${cy + ry * 0.32} Q ${cx} ${cy + ry * 0.62} ${cx + 9} ${cy + ry * 0.32}`}
-                            stroke={featureColor} strokeWidth="2" strokeLinecap="round" fill="none"
-                        />
-                    )}
-                </svg>
+                <img
+                    src={LOOPSY_STAGE_SRCS[Math.min(stage, 4)]}
+                    alt=""
+                    aria-hidden="true"
+                    className={`loopsy-char-img${float ? ' loopsy-float' : ''}`}
+                    width={size}
+                    height={size}
+                />
             );
         }
 
@@ -1288,7 +1306,7 @@
             return (
                 <div className="loopsy-top-bar">
                     <button className="loopsy-avatar-btn" onClick={onAvatarClick}>
-                        <LoopsyCharacterSVG stage={loopsyState.stage} size={32} />
+                        <LoopsyCharacterImg stage={loopsyState.stage} size={30} />
                     </button>
                     <div className="loopsy-progress-track">
                         <div className="loopsy-progress-fill" style={{ width: `${progress * 100}%` }} />
@@ -1320,7 +1338,7 @@
                         </svg>
                     </button>
                     <div className="character-float">
-                        <LoopsyCharacterSVG stage={loopsyState.stage} size={150} />
+                        <LoopsyCharacterImg stage={loopsyState.stage} size={160} float={false} />
                     </div>
                     <div className="speech-bubble">{phrase}</div>
                 </div>
@@ -1359,7 +1377,7 @@
                         transform: showNext ? 'scale(1.1)' : 'scale(1)',
                         opacity: 1
                     }}>
-                        <LoopsyCharacterSVG stage={displayStage} size={130} />
+                        <LoopsyCharacterImg stage={displayStage} size={140} float={false} />
                     </div>
                     <div className="exit-progress-track">
                         <div className="exit-progress-fill" style={{ width: `${fillWidth}%` }} />
