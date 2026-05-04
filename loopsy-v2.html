@@ -429,8 +429,7 @@
         .character-screen-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(62, 52, 42, 0.88);
-            backdrop-filter: blur(28px);
+            background: #F6F3EE;
             z-index: 200;
             display: flex;
             flex-direction: column;
@@ -453,10 +452,10 @@
             right: 20px;
             width: 44px;
             height: 44px;
-            background: rgba(255, 255, 255, 0.12);
+            background: rgba(58, 58, 58, 0.07);
             border: none;
             border-radius: 22px;
-            color: rgba(255, 255, 255, 0.6);
+            color: rgba(58, 58, 58, 0.5);
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -469,17 +468,26 @@
         }
 
         .speech-bubble {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.14);
+            background: rgba(255, 255, 255, 0.78);
+            border: 1px solid rgba(58, 58, 58, 0.08);
             border-radius: 20px;
             padding: 18px 28px;
             max-width: 260px;
             text-align: center;
-            color: rgba(255, 248, 240, 0.82);
+            color: #5A5260;
             font-size: 18px;
-            font-weight: 300;
+            font-weight: 400;
             letter-spacing: 0.3px;
             line-height: 1.55;
+        }
+
+        /* Affirmation shown instead of progress bar at max stage */
+        .exit-affirmation {
+            font-size: 20px;
+            font-weight: 400;
+            color: #5A5260;
+            letter-spacing: 0.4px;
+            opacity: 0.72;
         }
 
         .character-float {
@@ -940,7 +948,7 @@
             };
             
             return (
-                <div className="screen" style={{ background: 'linear-gradient(180deg, #F6F3EE 0%, #EDE8E0 100%)', overflow: 'hidden' }}>
+                <div className="screen" style={{ background: '#E8F5E9', overflow: 'hidden' }}>
                     <button className="icon-button home-button" onClick={handleHomeClick} aria-label="Go back">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                             <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
@@ -976,18 +984,24 @@
                 canvas.width = window.innerWidth;
                 canvas.height = window.innerHeight;
                 
+                // Warm yellow initial fill
+                ctx.fillStyle = '#FFF3CD';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
                 for (let i = 0; i < 800; i++) {
                     particles.current.push({
                         x: Math.random() * canvas.width,
                         y: Math.random() * canvas.height,
                         vx: 0,
                         vy: 0,
-                        hue: 200 + Math.random() * 60
+                        // Amber/gold hues — visible on yellow background
+                        hue: 35 + Math.random() * 20
                     });
                 }
-                
+
                 function animate() {
-                    ctx.fillStyle = 'rgba(246, 243, 238, 0.18)';
+                    // Trail fade matches yellow background
+                    ctx.fillStyle = 'rgba(255, 243, 205, 0.2)';
                     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
                     particles.current.forEach(p => {
@@ -1001,7 +1015,8 @@
                         if (p.y < 0) p.y = canvas.height;
                         if (p.y > canvas.height) p.y = 0;
 
-                        ctx.fillStyle = `hsla(${p.hue}, 38%, 42%, 0.72)`;
+                        // Dark amber — readable against yellow
+                        ctx.fillStyle = `hsla(${p.hue}, 70%, 28%, 0.78)`;
                         ctx.beginPath();
                         ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
                         ctx.fill();
@@ -1041,14 +1056,14 @@
             };
             
             return (
-                <div className="screen" style={{ background: 'linear-gradient(180deg, #F6F3EE 0%, #EDE8E0 100%)' }}>
+                <div className="screen" style={{ background: '#FFF3CD' }}>
                     <button className="icon-button home-button" onClick={handleHomeClick} aria-label="Go back">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                             <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
                             <polyline points="9 22 9 12 15 12 15 22"/>
                         </svg>
                     </button>
-                    <canvas 
+                    <canvas
                         ref={canvasRef}
                         onTouchStart={handleTouch}
                         onTouchMove={handleTouch}
@@ -1058,54 +1073,151 @@
                 </div>
             );
         }
-        
-        // Activity: Tap
+
+        // Activity: Tap — canvas physics (gravity + dot-dot collision + stacking)
         function TapActivity({ onHome }) {
-            const [marbles, setMarbles] = useState([]);
+            const canvasRef = useRef(null);
+            const dotsRef = useRef([]);   // live physics array, mutated in RAF
+            const rafRef = useRef(null);
             const nextId = useRef(0);
-            
-            const marbleColors = [
-                'radial-gradient(circle at 30% 30%, #FFB3D9, #FF80BF)',
-                'radial-gradient(circle at 30% 30%, #B3D9FF, #80BFFF)',
-                'radial-gradient(circle at 30% 30%, #D9FFB3, #BFFF80)',
-                'radial-gradient(circle at 30% 30%, #FFE5B3, #FFD280)',
-                'radial-gradient(circle at 30% 30%, #E5B3FF, #D280FF)',
-                'radial-gradient(circle at 30% 30%, #B3FFE5, #80FFD2)',
-                'radial-gradient(circle at 30% 30%, #FFB3B3, #FF8080)',
-                'radial-gradient(circle at 30% 30%, #B3E5FF, #80D2FF)'
+            const lastTouchTime = useRef(0); // debounce touch→click double-fire
+
+            const DOT_COLORS = [
+                '#F4A7C3', '#A7C4F4', '#A7F4C4', '#F4D5A7',
+                '#C4A7F4', '#A7F4E4', '#F4A7A7', '#A7D5F4',
+                '#F4C4A7', '#BDA7F4'
             ];
-            
-            const handleTouch = (e) => {
-                if (e.target.closest('.icon-button')) return;
-                haptic();
-                
-                const rect = e.currentTarget.getBoundingClientRect();
-                const x = e.touches ? e.touches[0].clientX - rect.left : e.clientX - rect.left;
-                const y = e.touches ? e.touches[0].clientY - rect.top : e.clientY - rect.top;
-                
-                const size = 30 + Math.random() * 30;
-                const newMarble = {
+            const GRAVITY = 0.18;   // gentle downward pull
+            const FLOOR_DAMP = 0.12; // energy kept on floor bounce (soft stop)
+            const WALL_DAMP  = 0.4;
+            const MAX_DOTS   = 65;
+
+            useEffect(() => {
+                const canvas = canvasRef.current;
+                const ctx = canvas.getContext('2d');
+                canvas.width  = window.innerWidth;
+                canvas.height = window.innerHeight;
+
+                // ── Two-pass collision resolution ──────────────────────────
+                // Each pass pushes overlapping pairs apart and exchanges a
+                // fraction of their relative velocity. Two passes per frame
+                // lets stacked dots settle without a heavy physics engine.
+                function resolveCollisions() {
+                    const dots = dotsRef.current;
+                    for (let pass = 0; pass < 2; pass++) {
+                        for (let i = 0; i < dots.length; i++) {
+                            for (let j = i + 1; j < dots.length; j++) {
+                                const a = dots[i], b = dots[j];
+                                const dx = b.x - a.x;
+                                const dy = b.y - a.y;
+                                const distSq = dx * dx + dy * dy;
+                                const minDist = a.r + b.r;
+                                if (distSq >= minDist * minDist) continue;
+
+                                const dist = Math.sqrt(distSq) || 0.001;
+                                const overlap = minDist - dist;
+                                const nx = dx / dist, ny = dy / dist;
+
+                                // Push apart (equal share)
+                                const push = overlap * 0.5;
+                                a.x -= nx * push; a.y -= ny * push;
+                                b.x += nx * push; b.y += ny * push;
+
+                                // Soft velocity exchange
+                                const dvx = a.vx - b.vx, dvy = a.vy - b.vy;
+                                const dot = dvx * nx + dvy * ny;
+                                if (dot > 0) {
+                                    const imp = dot * 0.28; // low restitution = calm
+                                    a.vx -= imp * nx; a.vy -= imp * ny;
+                                    b.vx += imp * nx; b.vy += imp * ny;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                function animate() {
+                    const W = canvas.width, H = canvas.height;
+                    ctx.clearRect(0, 0, W, H);
+
+                    const dots = dotsRef.current;
+                    for (const d of dots) {
+                        // Gravity
+                        d.vy += GRAVITY;
+
+                        // Integrate
+                        d.x += d.vx;
+                        d.y += d.vy;
+
+                        // Floor — soft stop, tiny horizontal friction
+                        if (d.y + d.r >= H) {
+                            d.y = H - d.r;
+                            d.vy *= -FLOOR_DAMP;
+                            d.vx *= 0.88;
+                            if (Math.abs(d.vy) < 0.3) d.vy = 0;
+                        }
+                        // Walls
+                        if (d.x - d.r < 0)  { d.x = d.r;     d.vx *= -WALL_DAMP; }
+                        if (d.x + d.r > W)  { d.x = W - d.r; d.vx *= -WALL_DAMP; }
+                        // Ceiling
+                        if (d.y - d.r < 0)  { d.y = d.r;     d.vy *= -WALL_DAMP; }
+                    }
+
+                    resolveCollisions();
+
+                    // Draw — flat circles, no shadows
+                    for (const d of dots) {
+                        ctx.beginPath();
+                        ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
+                        ctx.fillStyle = d.color;
+                        ctx.fill();
+                    }
+
+                    rafRef.current = requestAnimationFrame(animate);
+                }
+
+                animate();
+                return () => cancelAnimationFrame(rafRef.current);
+            }, []);
+
+            const spawnDot = (clientX, clientY) => {
+                if (dotsRef.current.length >= MAX_DOTS) return;
+                const canvas = canvasRef.current;
+                const rect = canvas.getBoundingClientRect();
+                const r = 16 + Math.random() * 13; // radius 16–29px
+                dotsRef.current.push({
                     id: nextId.current++,
-                    x: x - size / 2,
-                    y: y - size / 2,
-                    size: size,
-                    color: marbleColors[Math.floor(Math.random() * marbleColors.length)]
-                };
-                
-                setMarbles(prev => [...prev, newMarble]);
+                    x: clientX - rect.left,
+                    y: clientY - rect.top,
+                    vx: (Math.random() - 0.5) * 1.5,
+                    vy: 0,
+                    r,
+                    color: DOT_COLORS[Math.floor(Math.random() * DOT_COLORS.length)]
+                });
             };
-            
-            const handleHomeClick = () => {
+
+            const handleTouchStart = (e) => {
+                if (e.target.closest('.icon-button')) return;
+                lastTouchTime.current = Date.now();
                 haptic();
-                onHome();
+                for (const t of e.touches) spawnDot(t.clientX, t.clientY);
             };
-            
+
+            // Mouse fallback (desktop preview) — won't double-fire after touch
+            const handleMouseDown = (e) => {
+                if (e.target.closest('.icon-button')) return;
+                if (Date.now() - lastTouchTime.current < 600) return;
+                spawnDot(e.clientX, e.clientY);
+            };
+
+            const handleHomeClick = () => { haptic(); onHome(); };
+
             return (
-                <div 
-                    className="screen" 
-                    style={{ background: 'linear-gradient(180deg, #F6F3EE 0%, #EDE8E0 100%)', overflow: 'hidden' }}
-                    onClick={handleTouch}
-                    onTouchStart={handleTouch}
+                <div
+                    className="screen"
+                    style={{ background: '#F3E8E6', overflow: 'hidden' }}
+                    onTouchStart={handleTouchStart}
+                    onMouseDown={handleMouseDown}
                 >
                     <button className="icon-button home-button" onClick={handleHomeClick} aria-label="Go back">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
@@ -1113,153 +1225,185 @@
                             <polyline points="9 22 9 12 15 12 15 22"/>
                         </svg>
                     </button>
-                    {marbles.map(marble => (
-                        <div
-                            key={marble.id}
-                            className="marble"
-                            style={{
-                                left: `${marble.x}px`,
-                                top: `${marble.y}px`,
-                                width: `${marble.size}px`,
-                                height: `${marble.size}px`,
-                                background: marble.color
-                            }}
-                        />
-                    ))}
+                    <canvas ref={canvasRef} style={{ display: 'block', touchAction: 'none' }} />
                 </div>
             );
         }
         
-        // Activity: Flow (Lava Lamp with Gyroscope)
+        // Activity: Flow — gloop/liquid effect via SVG goo filter + gyro + touch
         function FlowActivity({ onHome }) {
-            const [blobs, setBlobs] = useState([]);
-            const gyroData = useRef({ beta: 0, gamma: 0 });
+            const [blobs, setBlobs] = useState(() => [
+                { id: 1, x: 30, y: 35, vx: 0, vy: 0, size: 160 },
+                { id: 2, x: 62, y: 58, vx: 0, vy: 0, size: 190 },
+                { id: 3, x: 22, y: 65, vx: 0, vy: 0, size: 145 },
+                { id: 4, x: 68, y: 30, vx: 0, vy: 0, size: 175 },
+            ]);
+            const gyroData     = useRef({ beta: 0, gamma: 0 });
             const smoothedGyro = useRef({ beta: 0, gamma: 0 });
-            
+            // Touch: stores finger position as 0–100% of screen, null when no touch
+            const touchRef = useRef(null);
+
             useEffect(() => {
-                // Initialize blobs
-                const initialBlobs = [
-                    { id: 1, x: 30, y: 40, vx: 0, vy: 0, size: 180, color: 'rgba(190, 155, 230, 0.38)' },
-                    { id: 2, x: 60, y: 70, vx: 0, vy: 0, size: 220, color: 'rgba(155, 195, 230, 0.38)' },
-                    { id: 3, x: 20, y: 20, vx: 0, vy: 0, size: 160, color: 'rgba(240, 175, 190, 0.38)' },
-                    { id: 4, x: 70, y: 50, vx: 0, vy: 0, size: 200, color: 'rgba(165, 220, 200, 0.38)' }
-                ];
-                setBlobs(initialBlobs);
-                
-                // Request device orientation permission (iOS 13+)
-                const requestPermission = async () => {
-                    if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                // ── Orientation lock (portrait) ──────────────────────────
+                // Silently ignored if API unavailable or not in standalone mode
+                if (screen.orientation?.lock) {
+                    screen.orientation.lock('portrait').catch(() => {});
+                }
+
+                // ── Gyroscope ────────────────────────────────────────────
+                const handleOrientation = (e) => {
+                    gyroData.current = { beta: e.beta || 0, gamma: e.gamma || 0 };
+                };
+
+                const requestGyro = async () => {
+                    if (typeof DeviceOrientationEvent !== 'undefined' &&
+                        typeof DeviceOrientationEvent.requestPermission === 'function') {
                         try {
-                            const permission = await DeviceOrientationEvent.requestPermission();
-                            if (permission === 'granted') {
-                                window.addEventListener('deviceorientation', handleOrientation);
-                            }
-                        } catch (error) {
-                            console.log('Device orientation not available');
-                        }
+                            const perm = await DeviceOrientationEvent.requestPermission();
+                            if (perm === 'granted') window.addEventListener('deviceorientation', handleOrientation);
+                        } catch {}
                     } else {
                         window.addEventListener('deviceorientation', handleOrientation);
                     }
                 };
-                
-                const handleOrientation = (event) => {
-                    gyroData.current = {
-                        beta: event.beta || 0,   // front-back tilt (-180 to 180)
-                        gamma: event.gamma || 0  // left-right tilt (-90 to 90)
-                    };
-                };
-                
-                requestPermission();
-                
-                // Animation loop
+                requestGyro();
+
+                // ── Physics loop (40 ms ≈ 25 fps — viscous, not snappy) ──
                 const interval = setInterval(() => {
-                    // Smooth gyroscope data (remove jitter)
-                    smoothedGyro.current.beta += (gyroData.current.beta - smoothedGyro.current.beta) * 0.05;
-                    smoothedGyro.current.gamma += (gyroData.current.gamma - smoothedGyro.current.gamma) * 0.05;
-                    
-                    // Convert tilt to gentle force (very small multiplier for slow movement)
-                    const forceX = smoothedGyro.current.gamma * 0.002;
-                    const forceY = smoothedGyro.current.beta * 0.002;
-                    
+                    // Low-pass filter on gyro to remove jitter
+                    smoothedGyro.current.beta  += (gyroData.current.beta  - smoothedGyro.current.beta)  * 0.06;
+                    smoothedGyro.current.gamma += (gyroData.current.gamma - smoothedGyro.current.gamma) * 0.06;
+
+                    const gyroFx = smoothedGyro.current.gamma * 0.0025;
+                    const gyroFy = smoothedGyro.current.beta  * 0.0025;
+
                     setBlobs(prev => prev.map(blob => {
-                        // Apply force from gyroscope
-                        let newVx = blob.vx + forceX;
-                        let newVy = blob.vy + forceY;
-                        
-                        // Heavy damping (like honey)
-                        newVx *= 0.92;
-                        newVy *= 0.92;
-                        
-                        // Update position
-                        let newX = blob.x + newVx;
-                        let newY = blob.y + newVy;
-                        
-                        // Soft boundaries (bounce gently)
-                        if (newX < 5) {
-                            newX = 5;
-                            newVx *= -0.3;
+                        let vx = blob.vx + gyroFx;
+                        let vy = blob.vy + gyroFy;
+
+                        // Touch attraction — pull blobs gently toward finger
+                        if (touchRef.current) {
+                            const dx = touchRef.current.x - blob.x;
+                            const dy = touchRef.current.y - blob.y;
+                            // Influence falls off with distance (within ~45% screen radius)
+                            const dist = Math.sqrt(dx * dx + dy * dy);
+                            if (dist < 45) {
+                                const strength = (1 - dist / 45) * 0.07;
+                                vx += dx * strength;
+                                vy += dy * strength;
+                            }
                         }
-                        if (newX > 95) {
-                            newX = 95;
-                            newVx *= -0.3;
-                        }
-                        if (newY < 5) {
-                            newY = 5;
-                            newVy *= -0.3;
-                        }
-                        if (newY > 95) {
-                            newY = 95;
-                            newVy *= -0.3;
-                        }
-                        
-                        return {
-                            ...blob,
-                            x: newX,
-                            y: newY,
-                            vx: newVx,
-                            vy: newVy
-                        };
+
+                        // Heavy viscous damping — feels like gloop, not water
+                        vx *= 0.88;
+                        vy *= 0.88;
+
+                        let x = blob.x + vx;
+                        let y = blob.y + vy;
+
+                        // Soft wall deformation: compress and reflect gently
+                        const edge = (blob.size / window.innerWidth) * 60;
+                        if (x < edge)      { x = edge;      vx *= -0.25; }
+                        if (x > 100 - edge){ x = 100 - edge; vx *= -0.25; }
+                        if (y < edge)      { y = edge;      vy *= -0.25; }
+                        if (y > 100 - edge){ y = 100 - edge; vy *= -0.25; }
+
+                        return { ...blob, x, y, vx, vy };
                     }));
-                }, 50); // 20fps for smooth but not too fast movement
-                
+                }, 40);
+
                 return () => {
                     clearInterval(interval);
                     window.removeEventListener('deviceorientation', handleOrientation);
+                    if (screen.orientation?.unlock) screen.orientation.unlock();
                 };
             }, []);
-            
-            const handleHomeClick = () => {
-                haptic();
-                onHome();
+
+            // Convert touch pixel coords to 0–100 percentage space
+            const toPercent = (e) => {
+                if (e.target.closest('.icon-button')) return;
+                const rect = e.currentTarget.getBoundingClientRect();
+                touchRef.current = {
+                    x: (e.touches[0].clientX - rect.left) / rect.width  * 100,
+                    y: (e.touches[0].clientY - rect.top)  / rect.height * 100,
+                };
             };
-            
+
+            const handleHomeClick = () => { haptic(); onHome(); };
+
             return (
-                <div className="screen" style={{ background: 'linear-gradient(180deg, #F6F3EE 0%, #EDE8E0 100%)', overflow: 'hidden' }}>
+                <div
+                    className="screen"
+                    style={{ background: '#EDE7F6', overflow: 'hidden' }}
+                    onTouchStart={toPercent}
+                    onTouchMove={toPercent}
+                    onTouchEnd={() => { touchRef.current = null; }}
+                >
+                    {/*
+                      SVG goo filter — the secret sauce.
+                      feGaussianBlur spreads each blob outward; feColorMatrix
+                      applies a hard alpha threshold so wherever two blobs
+                      overlap/are close the alpha jumps to 1, creating the
+                      organic liquid-merge effect. stdDeviation controls the
+                      "reach" of the merge zone. Higher alpha multiplier (20)
+                      + negative bias (-8) = sharper gloop boundary.
+                    */}
+                    <svg style={{ position: 'absolute', width: 0, height: 0 }} aria-hidden="true">
+                        <defs>
+                            <filter id="goo">
+                                <feGaussianBlur in="SourceGraphic" stdDeviation="13" result="blur" />
+                                <feColorMatrix in="blur" mode="matrix"
+                                    values="1 0 0 0 0
+                                            0 1 0 0 0
+                                            0 0 1 0 0
+                                            0 0 0 20 -8"
+                                    result="goo" />
+                            </filter>
+                        </defs>
+                    </svg>
+
                     <button className="icon-button home-button" onClick={handleHomeClick} aria-label="Go back">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                             <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
                             <polyline points="9 22 9 12 15 12 15 22"/>
                         </svg>
                     </button>
-                    {blobs.map(blob => (
-                        <div
-                            key={blob.id}
-                            className="lava-blob"
-                            style={{
-                                left: `${blob.x}%`,
-                                top: `${blob.y}%`,
-                                width: `${blob.size}px`,
-                                height: `${blob.size}px`,
-                                background: blob.color,
-                                transform: 'translate(-50%, -50%)'
-                            }}
-                        />
-                    ))}
+
+                    {/* Goo container — filter applied here, not on individual blobs */}
+                    <div style={{ position: 'absolute', inset: 0, filter: 'url(#goo)' }}>
+                        {blobs.map(blob => (
+                            <div
+                                key={blob.id}
+                                style={{
+                                    position: 'absolute',
+                                    left: `${blob.x}%`,
+                                    top:  `${blob.y}%`,
+                                    width:  `${blob.size}px`,
+                                    height: `${blob.size}px`,
+                                    borderRadius: '50%',
+                                    // Opaque purple — the goo filter needs solid alpha to work
+                                    background: 'rgba(158, 130, 205, 0.92)',
+                                    transform: 'translate(-50%, -50%)',
+                                }}
+                            />
+                        ))}
+                    </div>
                 </div>
             );
         }
         
         // ── Loopsy character system ──
+
+        // Short affirmations shown at max stage (no gamified language)
+        const AFFIRMATIONS = [
+            "nice one",
+            "well done",
+            "keep going",
+            "you're doing great",
+            "that was good",
+            "all good",
+            "feels right",
+        ];
 
         const LOOPSY_PHRASES = [
             "you're okay here",
@@ -1303,14 +1447,18 @@
 
         function LoopsyTopBar({ loopsyState, onAvatarClick }) {
             const progress = progressFromCount(loopsyState.activityCount);
+            const isMax = loopsyState.stage >= 4;
             return (
                 <div className="loopsy-top-bar">
                     <button className="loopsy-avatar-btn" onClick={onAvatarClick}>
                         <LoopsyCharacterImg stage={loopsyState.stage} size={30} />
                     </button>
-                    <div className="loopsy-progress-track">
-                        <div className="loopsy-progress-fill" style={{ width: `${progress * 100}%` }} />
-                    </div>
+                    {/* Hide bar at final stage — Loopsy is fully grown */}
+                    {!isMax && (
+                        <div className="loopsy-progress-track">
+                            <div className="loopsy-progress-fill" style={{ width: `${progress * 100}%` }} />
+                        </div>
+                    )}
                 </div>
             );
         }
@@ -1350,13 +1498,18 @@
             const [fillWidth, setFillWidth] = useState(progressFromCount(loopsyState.activityCount) * 100);
             const [showNext, setShowNext] = useState(false);
             const stageChanged = pendingState.stage > loopsyState.stage;
+            // At max stage, show a soft affirmation instead of the progress bar
+            const isMax = pendingState.stage >= 4;
+            const [affirmation] = useState(
+                () => AFFIRMATIONS[Math.floor(Math.random() * AFFIRMATIONS.length)]
+            );
 
             useEffect(() => {
                 requestAnimationFrame(() => setVisible(true));
 
-                const t1 = setTimeout(() => {
+                const t1 = !isMax ? setTimeout(() => {
                     setFillWidth(progressFromCount(pendingState.activityCount) * 100);
-                }, 350);
+                }, 350) : null;
 
                 const t2 = stageChanged ? setTimeout(() => setShowNext(true), 1000) : null;
 
@@ -1366,7 +1519,7 @@
                     setTimeout(onComplete, 420);
                 }, totalDuration);
 
-                return () => { clearTimeout(t1); if (t2) clearTimeout(t2); clearTimeout(t3); };
+                return () => { if (t1) clearTimeout(t1); if (t2) clearTimeout(t2); clearTimeout(t3); };
             }, []);
 
             const displayStage = showNext ? pendingState.stage : loopsyState.stage;
@@ -1379,9 +1532,13 @@
                     }}>
                         <LoopsyCharacterImg stage={displayStage} size={140} float={false} />
                     </div>
-                    <div className="exit-progress-track">
-                        <div className="exit-progress-fill" style={{ width: `${fillWidth}%` }} />
-                    </div>
+                    {isMax ? (
+                        <div className="exit-affirmation">{affirmation}</div>
+                    ) : (
+                        <div className="exit-progress-track">
+                            <div className="exit-progress-fill" style={{ width: `${fillWidth}%` }} />
+                        </div>
+                    )}
                 </div>
             );
         }
