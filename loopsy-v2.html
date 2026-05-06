@@ -537,6 +537,116 @@
             transition: transform 0.9s cubic-bezier(0.34, 1.2, 0.64, 1), opacity 0.6s ease;
         }
 
+        /* ── Breath game ── */
+        .breath-count {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 60px;
+            font-weight: 200;
+            color: rgba(90, 82, 96, 0.4);
+            letter-spacing: -2px;
+            pointer-events: none;
+            user-select: none;
+            z-index: 5;
+        }
+
+        @keyframes rippleExpand {
+            0%   { width: 160px; height: 160px; opacity: 0.48; }
+            100% { width: 560px; height: 560px; opacity: 0; }
+        }
+
+        .breath-ripple {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            border: 1.5px solid rgba(175, 145, 210, 0.42);
+            pointer-events: none;
+            animation: rippleExpand 3.6s ease-out forwards;
+        }
+
+        /* ── Draw game toolbar ── */
+        .draw-toolbar {
+            position: absolute;
+            bottom: calc(24px + env(safe-area-inset-bottom));
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid rgba(58, 58, 58, 0.08);
+            border-radius: 32px;
+            padding: 7px 10px;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            z-index: 100;
+            white-space: nowrap;
+        }
+
+        .draw-tool-btn {
+            width: 46px;
+            height: 46px;
+            border: none;
+            background: transparent;
+            border-radius: 23px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.15s ease;
+            -webkit-tap-highlight-color: transparent;
+            flex-shrink: 0;
+        }
+
+        .draw-tool-btn.active {
+            background: rgba(155, 135, 195, 0.15);
+        }
+
+        .draw-tool-btn:active {
+            transform: scale(0.88);
+        }
+
+        .brush-dot {
+            border-radius: 50%;
+            background: #5A5260;
+            opacity: 0.55;
+            flex-shrink: 0;
+        }
+
+        .draw-divider {
+            width: 1px;
+            height: 22px;
+            background: rgba(58, 58, 58, 0.12);
+            margin: 0 3px;
+            flex-shrink: 0;
+        }
+
+        /* ── Speech bubble (character screen) — tail pointing down to character ── */
+        .speech-bubble {
+            position: relative;
+        }
+
+        .speech-bubble::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-top: 10px solid rgba(255, 255, 255, 0.78);
+        }
+
+        /* ── Level-up confetti ── */
+        @keyframes confettiFall {
+            0%   { transform: translateY(0px) rotate(0deg);   opacity: 0.88; }
+            100% { transform: translateY(115vh) rotate(520deg); opacity: 0; }
+        }
+
         /* ── Sensory safety: respect OS reduced-motion preference ── */
         @media (prefers-reduced-motion: reduce) {
             .loopsy-float,
@@ -550,6 +660,9 @@
             .exit-progress-fill,
             .loopsy-morph-wrap {
                 transition: none !important;
+            }
+            .breath-ripple {
+                animation: none !important;
             }
         }
     </style>
@@ -756,130 +869,202 @@
             );
         }
         
-        // Activity: Draw
+        // Activity: Draw — 3 brush sizes, soft-edge eraser, bottom toolbar
         function DrawActivity({ onHome }) {
             const canvasRef = useRef(null);
             const [isEraser, setIsEraser] = useState(false);
-            
+            const [brushSize, setBrushSize] = useState('medium'); // 'small'|'medium'|'large'
+
+            // Paint radius = radial gradient reach; eraser radius = soft erase zone
+            const BRUSH = {
+                small:  { paint: 28,  erase: 18 },
+                medium: { paint: 65,  erase: 40 },
+                large:  { paint: 115, erase: 70 },
+            };
+
             useEffect(() => {
                 const canvas = canvasRef.current;
                 const ctx = canvas.getContext('2d');
                 canvas.width = window.innerWidth;
                 canvas.height = window.innerHeight;
-                
                 ctx.fillStyle = '#F6F3EE';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
             }, []);
 
             const handleTouch = (e) => {
-                if (e.target.closest('.icon-button')) return;
+                if (e.target.closest('.icon-button') || e.target.closest('.draw-toolbar')) return;
                 haptic();
 
                 const canvas = canvasRef.current;
                 const ctx = canvas.getContext('2d');
                 const rect = canvas.getBoundingClientRect();
                 const x = e.touches ? e.touches[0].clientX - rect.left : e.clientX - rect.left;
-                const y = e.touches ? e.touches[0].clientY - rect.top : e.clientY - rect.top;
+                const y = e.touches ? e.touches[0].clientY - rect.top  : e.clientY - rect.top;
+                const cfg = BRUSH[brushSize];
 
                 if (isEraser) {
-                    ctx.fillStyle = '#F6F3EE';
+                    // Soft-edge eraser: radial gradient of the background colour
+                    const r = cfg.erase;
+                    const grad = ctx.createRadialGradient(x, y, 0, x, y, r);
+                    grad.addColorStop(0,    'rgba(246, 243, 238, 1)');
+                    grad.addColorStop(0.55, 'rgba(246, 243, 238, 0.85)');
+                    grad.addColorStop(1,    'rgba(246, 243, 238, 0)');
+                    ctx.fillStyle = grad;
                     ctx.beginPath();
-                    ctx.arc(x, y, 30, 0, Math.PI * 2);
+                    ctx.arc(x, y, r, 0, Math.PI * 2);
                     ctx.fill();
                 } else {
                     const hue = Math.random() * 80 + 200;
-                    const saturation = 50 + Math.random() * 20;
-                    const lightness = 50 + Math.random() * 20;
-                    
-                    const gradient = ctx.createRadialGradient(x, y, 0, x, y, 60);
-                    gradient.addColorStop(0, `hsla(${hue}, ${saturation}%, ${lightness}%, 0.35)`);
-                    gradient.addColorStop(0.5, `hsla(${hue}, ${saturation}%, ${lightness}%, 0.18)`);
-                    gradient.addColorStop(1, `hsla(${hue}, ${saturation}%, ${lightness}%, 0)`);
-                    
+                    const sat = 50 + Math.random() * 20;
+                    const lgt = 50 + Math.random() * 20;
+                    const r = cfg.paint;
+                    const gradient = ctx.createRadialGradient(x, y, 0, x, y, r);
+                    gradient.addColorStop(0,   `hsla(${hue}, ${sat}%, ${lgt}%, 0.38)`);
+                    gradient.addColorStop(0.5, `hsla(${hue}, ${sat}%, ${lgt}%, 0.18)`);
+                    gradient.addColorStop(1,   `hsla(${hue}, ${sat}%, ${lgt}%, 0)`);
                     ctx.fillStyle = gradient;
                     ctx.fillRect(0, 0, canvas.width, canvas.height);
                 }
             };
-            
-            const toggleTool = () => {
-                haptic();
-                setIsEraser(!isEraser);
-            };
-            
-            const handleHomeClick = () => {
-                haptic();
-                onHome();
-            };
-            
+
+            const handleHomeClick = () => { haptic(); onHome(); };
+
+            const pickBrush = (size) => { haptic(); setBrushSize(size); setIsEraser(false); };
+            const toggleEraser = () => { haptic(); setIsEraser(e => !e); };
+
             return (
                 <div className="screen" style={{ background: 'linear-gradient(180deg, #F6F3EE 0%, #EDE8E0 100%)' }}>
-                    <button className="icon-button tool-button" onClick={toggleTool}>
-                        {isEraser ? (
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path d="M12 19l7-7 3 3-7 7-3-3z"/>
-                                <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/>
-                            </svg>
-                        ) : (
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path d="M20 20H5.5L2 16.5 10.5 8l3 3L20 4"/>
-                                <path d="M13.5 11l3-3"/>
-                            </svg>
-                        )}
-                    </button>
                     <button className="icon-button home-button" onClick={handleHomeClick} aria-label="Go back">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                             <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
                             <polyline points="9 22 9 12 15 12 15 22"/>
                         </svg>
                     </button>
-                    <canvas 
+                    <canvas
                         ref={canvasRef}
                         onTouchStart={handleTouch}
                         onTouchMove={handleTouch}
                         onMouseDown={handleTouch}
                         onMouseMove={(e) => e.buttons === 1 && handleTouch(e)}
                     />
+                    {/* Bottom toolbar: brush sizes + eraser */}
+                    <div className="draw-toolbar" role="toolbar" aria-label="Drawing tools">
+                        <button
+                            className={`draw-tool-btn ${brushSize === 'small' && !isEraser ? 'active' : ''}`}
+                            onClick={() => pickBrush('small')}
+                            aria-label="Small brush" aria-pressed={brushSize === 'small' && !isEraser}
+                        >
+                            <div className="brush-dot" style={{ width: 8, height: 8 }} />
+                        </button>
+                        <button
+                            className={`draw-tool-btn ${brushSize === 'medium' && !isEraser ? 'active' : ''}`}
+                            onClick={() => pickBrush('medium')}
+                            aria-label="Medium brush" aria-pressed={brushSize === 'medium' && !isEraser}
+                        >
+                            <div className="brush-dot" style={{ width: 14, height: 14 }} />
+                        </button>
+                        <button
+                            className={`draw-tool-btn ${brushSize === 'large' && !isEraser ? 'active' : ''}`}
+                            onClick={() => pickBrush('large')}
+                            aria-label="Large brush" aria-pressed={brushSize === 'large' && !isEraser}
+                        >
+                            <div className="brush-dot" style={{ width: 21, height: 21 }} />
+                        </button>
+                        <div className="draw-divider" aria-hidden="true" />
+                        <button
+                            className={`draw-tool-btn ${isEraser ? 'active' : ''}`}
+                            onClick={toggleEraser}
+                            aria-label="Eraser" aria-pressed={isEraser}
+                        >
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(58,58,58,0.6)" strokeWidth="1.8" aria-hidden="true">
+                                <path d="M20 20H5.5L2 16.5 10.5 8l7 7-4.5 4.5"/>
+                                <path d="M17.5 5.5l1 1-7 7-1-1"/>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
             );
         }
         
-        // Activity: Breath
+        // Activity: Breath — count, ripples, warm soft circle
         function BreathActivity({ onHome }) {
             const [scale, setScale] = useState(1);
-            
+            const [count, setCount] = useState(1);
+            const [ripples, setRipples] = useState([]);
+            const rippleId = useRef(0);
+            const isInRef = useRef(true);
+
+            const HALF_MS = 4000; // 4 s in, 4 s out
+
             useEffect(() => {
-                let growing = true;
-                const interval = setInterval(() => {
-                    setScale(prev => {
-                        if (prev >= 1.7) growing = false;
-                        if (prev <= 1) growing = true;
-                        return growing ? prev + 0.006 : prev - 0.006;
-                    });
-                }, 30);
-                
+                const start = Date.now();
+
+                const tick = () => {
+                    const elapsed = Date.now() - start;
+                    const pos = elapsed % (HALF_MS * 2);
+                    const isIn = pos < HALF_MS;
+                    const t = isIn ? pos / HALF_MS : (pos - HALF_MS) / HALF_MS;
+
+                    setScale(isIn ? 1 + t * 0.75 : 1.75 - t * 0.75);
+                    setCount(isIn
+                        ? Math.min(4, Math.floor(t * 4) + 1)
+                        : Math.max(1, 4 - Math.floor(t * 4)));
+
+                    // Spawn a ripple on each phase transition
+                    if (isIn !== isInRef.current) {
+                        isInRef.current = isIn;
+                        setRipples(prev => {
+                            const id = rippleId.current++;
+                            return [...prev.slice(-3), { id }];
+                        });
+                    }
+                };
+
+                const interval = setInterval(tick, 50);
                 return () => clearInterval(interval);
             }, []);
-            
-            const handleHomeClick = () => {
-                haptic();
-                onHome();
-            };
-            
+
+            const handleHomeClick = () => { haptic(); onHome(); };
+
             return (
-                <div className="screen" style={{ background: 'linear-gradient(180deg, #F6F3EE 0%, #EDE8E0 100%)' }}>
+                <div className="screen" style={{
+                    background: 'linear-gradient(180deg, #F6F3EE 0%, #EDE8E0 100%)',
+                    overflow: 'hidden'
+                }}>
                     <button className="icon-button home-button" onClick={handleHomeClick} aria-label="Go back">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                             <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
                             <polyline points="9 22 9 12 15 12 15 22"/>
                         </svg>
                     </button>
-                    <div 
-                        className="breathing-circle"
-                        style={{ 
-                            transform: `translate(-50%, -50%) scale(${scale})`,
-                            transition: 'transform 0.03s linear'
-                        }}
-                    />
+
+                    {/* Water ripple rings */}
+                    {ripples.map(r => (
+                        <div key={r.id} className="breath-ripple" aria-hidden="true" />
+                    ))}
+
+                    {/* Outer soft halo */}
+                    <div style={{
+                        position: 'absolute', top: '50%', left: '50%',
+                        width: '150px', height: '150px', borderRadius: '50%',
+                        background: 'radial-gradient(circle, rgba(215, 185, 225, 0.14), transparent 72%)',
+                        transform: `translate(-50%, -50%) scale(${scale * 1.45})`,
+                        transition: 'transform 0.05s linear',
+                        pointerEvents: 'none',
+                    }} aria-hidden="true" />
+
+                    {/* Main warm breathing circle */}
+                    <div style={{
+                        position: 'absolute', top: '50%', left: '50%',
+                        width: '150px', height: '150px', borderRadius: '50%',
+                        background: 'radial-gradient(circle at 38% 35%, rgba(242, 215, 232, 0.7), rgba(195, 165, 225, 0.38) 48%, rgba(185, 165, 220, 0.06) 80%)',
+                        transform: `translate(-50%, -50%) scale(${scale})`,
+                        transition: 'transform 0.05s linear',
+                        pointerEvents: 'none',
+                    }} aria-hidden="true" />
+
+                    {/* Countdown / count-up number */}
+                    <div className="breath-count" aria-live="polite" aria-label={`${count}`}>{count}</div>
                 </div>
             );
         }
@@ -1230,102 +1415,84 @@
             );
         }
         
-        // Activity: Flow — gloop/liquid effect via SVG goo filter + gyro + touch
+        // Activity: Flow — stretchy liquid goo blobs that bounce around the screen
         function FlowActivity({ onHome }) {
+            // Initial velocities give each blob its own gentle trajectory
             const [blobs, setBlobs] = useState(() => [
-                { id: 1, x: 30, y: 35, vx: 0, vy: 0, size: 160 },
-                { id: 2, x: 62, y: 58, vx: 0, vy: 0, size: 190 },
-                { id: 3, x: 22, y: 65, vx: 0, vy: 0, size: 145 },
-                { id: 4, x: 68, y: 30, vx: 0, vy: 0, size: 175 },
+                { id: 1, x: 30, y: 35, vx:  0.48, vy:  0.32, size: 160 },
+                { id: 2, x: 62, y: 58, vx: -0.36, vy:  0.50, size: 190 },
+                { id: 3, x: 22, y: 65, vx:  0.52, vy: -0.40, size: 145 },
+                { id: 4, x: 68, y: 30, vx: -0.44, vy:  0.38, size: 175 },
             ]);
-            const gyroData     = useRef({ beta: 0, gamma: 0 });
-            const smoothedGyro = useRef({ beta: 0, gamma: 0 });
-            // Touch: stores finger position as 0–100% of screen, null when no touch
+            // Touch/mouse: stores position as 0–100% of screen, null when idle
             const touchRef = useRef(null);
 
             useEffect(() => {
-                // ── Orientation lock (portrait) ──────────────────────────
-                // Silently ignored if API unavailable or not in standalone mode
+                // Portrait lock — silently ignored if API unavailable
                 if (screen.orientation?.lock) {
                     screen.orientation.lock('portrait').catch(() => {});
                 }
 
-                // ── Gyroscope ────────────────────────────────────────────
-                const handleOrientation = (e) => {
-                    gyroData.current = { beta: e.beta || 0, gamma: e.gamma || 0 };
-                };
-
-                const requestGyro = async () => {
-                    if (typeof DeviceOrientationEvent !== 'undefined' &&
-                        typeof DeviceOrientationEvent.requestPermission === 'function') {
-                        try {
-                            const perm = await DeviceOrientationEvent.requestPermission();
-                            if (perm === 'granted') window.addEventListener('deviceorientation', handleOrientation);
-                        } catch {}
-                    } else {
-                        window.addEventListener('deviceorientation', handleOrientation);
-                    }
-                };
-                requestGyro();
-
-                // ── Physics loop (40 ms ≈ 25 fps — viscous, not snappy) ──
+                // Physics loop: 35 ms ticks — calm, not snappy
                 const interval = setInterval(() => {
-                    // Low-pass filter on gyro to remove jitter
-                    smoothedGyro.current.beta  += (gyroData.current.beta  - smoothedGyro.current.beta)  * 0.06;
-                    smoothedGyro.current.gamma += (gyroData.current.gamma - smoothedGyro.current.gamma) * 0.06;
-
-                    const gyroFx = smoothedGyro.current.gamma * 0.0025;
-                    const gyroFy = smoothedGyro.current.beta  * 0.0025;
-
                     setBlobs(prev => prev.map(blob => {
-                        let vx = blob.vx + gyroFx;
-                        let vy = blob.vy + gyroFy;
+                        let vx = blob.vx;
+                        let vy = blob.vy;
 
-                        // Touch attraction — pull blobs gently toward finger
+                        // Touch/drag attraction — pulls blobs toward finger
                         if (touchRef.current) {
                             const dx = touchRef.current.x - blob.x;
                             const dy = touchRef.current.y - blob.y;
-                            // Influence falls off with distance (within ~45% screen radius)
                             const dist = Math.sqrt(dx * dx + dy * dy);
-                            if (dist < 45) {
-                                const strength = (1 - dist / 45) * 0.07;
+                            if (dist < 55 && dist > 0.01) {
+                                const strength = (1 - dist / 55) * 0.15;
                                 vx += dx * strength;
                                 vy += dy * strength;
                             }
                         }
 
-                        // Heavy viscous damping — feels like gloop, not water
-                        vx *= 0.88;
-                        vy *= 0.88;
+                        // Tiny random drift — keeps blobs alive even without interaction
+                        vx += (Math.random() - 0.5) * 0.012;
+                        vy += (Math.random() - 0.5) * 0.012;
+
+                        // Light damping so blobs stay in motion
+                        vx *= 0.992;
+                        vy *= 0.992;
+
+                        // Cap speed — calm max velocity
+                        const spd = Math.sqrt(vx * vx + vy * vy);
+                        const MAX_SPD = 1.4;
+                        if (spd > MAX_SPD) { vx = vx / spd * MAX_SPD; vy = vy / spd * MAX_SPD; }
 
                         let x = blob.x + vx;
                         let y = blob.y + vy;
 
-                        // Soft wall deformation: compress and reflect gently
-                        const edge = (blob.size / window.innerWidth) * 60;
-                        if (x < edge)      { x = edge;      vx *= -0.25; }
-                        if (x > 100 - edge){ x = 100 - edge; vx *= -0.25; }
-                        if (y < edge)      { y = edge;      vy *= -0.25; }
-                        if (y > 100 - edge){ y = 100 - edge; vy *= -0.25; }
+                        // Bounce off walls — elastic enough to feel bouncy
+                        const edge = (blob.size / window.innerWidth) * 52;
+                        if (x < edge)        { x = edge;        vx =  Math.abs(vx) * 0.78; }
+                        if (x > 100 - edge)  { x = 100 - edge;  vx = -Math.abs(vx) * 0.78; }
+                        if (y < edge)        { y = edge;        vy =  Math.abs(vy) * 0.78; }
+                        if (y > 100 - edge)  { y = 100 - edge;  vy = -Math.abs(vy) * 0.78; }
 
                         return { ...blob, x, y, vx, vy };
                     }));
-                }, 40);
+                }, 35);
 
                 return () => {
                     clearInterval(interval);
-                    window.removeEventListener('deviceorientation', handleOrientation);
                     if (screen.orientation?.unlock) screen.orientation.unlock();
                 };
             }, []);
 
-            // Convert touch pixel coords to 0–100 percentage space
+            // Convert pointer coords → 0–100 % space
             const toPercent = (e) => {
                 if (e.target.closest('.icon-button')) return;
                 const rect = e.currentTarget.getBoundingClientRect();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
                 touchRef.current = {
-                    x: (e.touches[0].clientX - rect.left) / rect.width  * 100,
-                    y: (e.touches[0].clientY - rect.top)  / rect.height * 100,
+                    x: (clientX - rect.left) / rect.width  * 100,
+                    y: (clientY - rect.top)  / rect.height * 100,
                 };
             };
 
@@ -1338,25 +1505,25 @@
                     onTouchStart={toPercent}
                     onTouchMove={toPercent}
                     onTouchEnd={() => { touchRef.current = null; }}
+                    onMouseMove={(e) => { if (e.buttons > 0) toPercent(e); }}
+                    onMouseUp={() => { touchRef.current = null; }}
                 >
                     {/*
-                      SVG goo filter — the secret sauce.
-                      feGaussianBlur spreads each blob outward; feColorMatrix
-                      applies a hard alpha threshold so wherever two blobs
-                      overlap/are close the alpha jumps to 1, creating the
-                      organic liquid-merge effect. stdDeviation controls the
-                      "reach" of the merge zone. Higher alpha multiplier (20)
-                      + negative bias (-8) = sharper gloop boundary.
+                      SVG goo filter: feGaussianBlur spreads each blob's alpha outward;
+                      feColorMatrix applies a hard threshold — where blobs are close
+                      their blurred regions overlap and snap into one organic shape.
+                      Higher stdDeviation (19) = longer, stretchier necks between blobs.
+                      Alpha multiplier 20, bias -9 = sharp but forgiving boundary.
                     */}
                     <svg style={{ position: 'absolute', width: 0, height: 0 }} aria-hidden="true">
                         <defs>
                             <filter id="goo">
-                                <feGaussianBlur in="SourceGraphic" stdDeviation="13" result="blur" />
+                                <feGaussianBlur in="SourceGraphic" stdDeviation="19" result="blur" />
                                 <feColorMatrix in="blur" mode="matrix"
                                     values="1 0 0 0 0
                                             0 1 0 0 0
                                             0 0 1 0 0
-                                            0 0 0 20 -8"
+                                            0 0 0 20 -9"
                                     result="goo" />
                             </filter>
                         </defs>
@@ -1369,7 +1536,7 @@
                         </svg>
                     </button>
 
-                    {/* Goo container — filter applied here, not on individual blobs */}
+                    {/* Goo container — filter must wrap all blobs together */}
                     <div style={{ position: 'absolute', inset: 0, filter: 'url(#goo)' }}>
                         {blobs.map(blob => (
                             <div
@@ -1381,8 +1548,8 @@
                                     width:  `${blob.size}px`,
                                     height: `${blob.size}px`,
                                     borderRadius: '50%',
-                                    // Opaque purple — the goo filter needs solid alpha to work
-                                    background: 'rgba(158, 130, 205, 0.92)',
+                                    // Must be opaque — goo alpha threshold needs solid alpha
+                                    background: 'rgba(152, 124, 200, 0.94)',
                                     transform: 'translate(-50%, -50%)',
                                 }}
                             />
@@ -1442,8 +1609,8 @@
             );
         }
 
-        function stageFromCount(n) { return Math.min(4, Math.floor(n / 2)); }
-        function progressFromCount(n) { return Math.min(1, n / 8); }
+        function stageFromCount(n) { return Math.min(4, n); }
+        function progressFromCount(n) { return Math.min(1, n / 4); }
 
         function LoopsyTopBar({ loopsyState, onAvatarClick }) {
             const progress = progressFromCount(loopsyState.activityCount);
@@ -1485,10 +1652,11 @@
                             <line x1="6" y1="6" x2="18" y2="18"/>
                         </svg>
                     </button>
+                    {/* Speech bubble sits above the character, tail points down */}
+                    <div className="speech-bubble">{phrase}</div>
                     <div className="character-float">
                         <LoopsyCharacterImg stage={loopsyState.stage} size={160} float={false} />
                     </div>
-                    <div className="speech-bubble">{phrase}</div>
                 </div>
             );
         }
@@ -1498,11 +1666,25 @@
             const [fillWidth, setFillWidth] = useState(progressFromCount(loopsyState.activityCount) * 100);
             const [showNext, setShowNext] = useState(false);
             const stageChanged = pendingState.stage > loopsyState.stage;
-            // At max stage, show a soft affirmation instead of the progress bar
             const isMax = pendingState.stage >= 4;
             const [affirmation] = useState(
                 () => AFFIRMATIONS[Math.floor(Math.random() * AFFIRMATIONS.length)]
             );
+
+            // Soft confetti — only generated when stage advances
+            const [confettiPieces] = useState(() => {
+                if (!stageChanged) return [];
+                const palette = ['#F4C4D8','#D8C4F4','#C4F4D8','#F4DCC4','#C4D8F4','#F4ECC4','#E4C4F4'];
+                return Array.from({ length: 26 }, (_, i) => ({
+                    id: i,
+                    x: 4 + Math.random() * 92,
+                    size: 6 + Math.random() * 6,
+                    round: Math.random() > 0.38,
+                    color: palette[Math.floor(Math.random() * palette.length)],
+                    duration: 4.2 + Math.random() * 2.5,
+                    delay: Math.random() * 1.8,
+                }));
+            });
 
             useEffect(() => {
                 requestAnimationFrame(() => setVisible(true));
@@ -1513,7 +1695,7 @@
 
                 const t2 = stageChanged ? setTimeout(() => setShowNext(true), 1000) : null;
 
-                const totalDuration = stageChanged ? 2200 : 1700;
+                const totalDuration = stageChanged ? 2600 : 1700;
                 const t3 = setTimeout(() => {
                     setVisible(false);
                     setTimeout(onComplete, 420);
@@ -1526,6 +1708,25 @@
 
             return (
                 <div className={`exit-overlay ${visible ? 'visible' : ''}`}>
+                    {/* Soft confetti falls behind everything else */}
+                    {confettiPieces.map(p => (
+                        <div
+                            key={p.id}
+                            aria-hidden="true"
+                            style={{
+                                position: 'absolute',
+                                left: `${p.x}%`,
+                                top: '-14px',
+                                width:  `${p.size}px`,
+                                height: `${p.size}px`,
+                                borderRadius: p.round ? '50%' : '3px',
+                                background: p.color,
+                                opacity: 0,
+                                animation: `confettiFall ${p.duration}s ${p.delay}s ease-in forwards`,
+                                pointerEvents: 'none',
+                            }}
+                        />
+                    ))}
                     <div className="loopsy-morph-wrap" style={{
                         transform: showNext ? 'scale(1.1)' : 'scale(1)',
                         opacity: 1
