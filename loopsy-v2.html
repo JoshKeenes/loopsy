@@ -656,7 +656,7 @@
         /* ── Breath phase label ── */
         .breath-label {
             position: absolute;
-            top: calc(50% + 58px);
+            top: calc(50% + 152px);
             left: 50%;
             transform: translateX(-50%);
             font-size: 14px;
@@ -713,6 +713,128 @@
             letter-spacing: 0.3px;
             z-index: 50;
             pointer-events: none;
+        }
+
+        /* ── Dark mode toggle button position ── */
+        .dark-toggle-btn {
+            right: 76px;
+        }
+
+        /* ── Game completion overlay message ── */
+        .game-complete-msg {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.92);
+            border: 1px solid rgba(58, 58, 58, 0.08);
+            border-radius: 20px;
+            padding: 20px 36px;
+            font-size: 22px;
+            font-weight: 400;
+            color: #5A5260;
+            pointer-events: none;
+            z-index: 50;
+            text-align: center;
+            letter-spacing: 0.3px;
+        }
+
+        /* ── Dark mode — WCAG 2.2 AA palette ── */
+        /* Primary text #EDE8F8 on #1C1826 ≈ 12:1 ✓  Secondary #B8AED0 ≈ 6:1 ✓  Muted #8A80A0 ≈ 4.5:1 ✓ */
+        #app.dark-mode .home-screen,
+        #app.dark-mode .activities-screen {
+            background: linear-gradient(180deg, #1C1826 0%, #211D2F 100%);
+        }
+
+        #app.dark-mode .app-title {
+            color: #EDE8F8;
+        }
+
+        #app.dark-mode .swipe-hint {
+            color: #B8AED0;
+        }
+
+        #app.dark-mode .zzz-bubble {
+            background: rgba(37, 32, 52, 0.78);
+            color: rgba(237, 232, 248, 0.55);
+        }
+
+        #app.dark-mode .activity-tile {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(255, 255, 255, 0.06);
+        }
+
+        #app.dark-mode .activity-tile:active {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        #app.dark-mode .tile-label {
+            color: #EDE8F8;
+        }
+
+        #app.dark-mode .tile-chevron {
+            color: rgba(237, 232, 248, 0.28);
+        }
+
+        #app.dark-mode .icon-button,
+        #app.dark-mode .loopsy-avatar-btn {
+            background: rgba(255, 255, 255, 0.08);
+            color: rgba(237, 232, 248, 0.65);
+        }
+
+        #app.dark-mode .icon-button:active,
+        #app.dark-mode .loopsy-avatar-btn:active {
+            background: rgba(255, 255, 255, 0.14);
+        }
+
+        #app.dark-mode .loopsy-progress-track {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        #app.dark-mode .exit-overlay,
+        #app.dark-mode .character-screen-overlay {
+            background: linear-gradient(180deg, #1C1826 0%, #211D2F 100%);
+        }
+
+        #app.dark-mode .speech-bubble {
+            background: rgba(37, 32, 52, 0.92);
+            border-color: rgba(255, 255, 255, 0.08);
+            color: #EDE8F8;
+        }
+
+        #app.dark-mode .speech-bubble::after {
+            border-top-color: rgba(37, 32, 52, 0.92);
+        }
+
+        #app.dark-mode .character-close-btn {
+            background: rgba(255, 255, 255, 0.08);
+            color: rgba(237, 232, 248, 0.6);
+        }
+
+        #app.dark-mode .reset-btn {
+            background: rgba(255, 255, 255, 0.07);
+            color: rgba(237, 232, 248, 0.45);
+        }
+
+        #app.dark-mode .draw-toolbar {
+            background: rgba(30, 25, 44, 0.92);
+            border-color: rgba(255, 255, 255, 0.08);
+        }
+
+        #app.dark-mode .draw-tool-btn.active {
+            background: rgba(175, 155, 215, 0.22);
+        }
+
+        #app.dark-mode .brush-dot {
+            background: #EDE8F8;
+        }
+
+        #app.dark-mode .draw-divider {
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        #app.dark-mode .exit-progress-track {
+            background: rgba(255, 255, 255, 0.1);
         }
 
         /* ── Sensory safety: respect OS reduced-motion preference ── */
@@ -816,7 +938,7 @@
                     style={{ pointerEvents: isVisible ? 'all' : 'none' }}
                 >
                     <LoopsySleeping />
-                    <div className="app-title">loopsly</div>
+                    <div className="app-title">loopsy</div>
                     <div className="swipe-hint">
                         <span className="swipe-icon">↑</span>
                         swipe up
@@ -919,7 +1041,7 @@
         }
 
         // Activities Dashboard — Soft Tile Stack
-        function ActivitiesScreen({ onSelectActivity, onHome, isVisible, loopsyState, onLoopsyClick }) {
+        function ActivitiesScreen({ onSelectActivity, onHome, isVisible, loopsyState, onLoopsyClick, isDark, onToggleDark }) {
             const activities = [
                 { id: 'draw',   icon: 'draw.png',    label: 'Draw',    tint: '#EDE7F6' },
                 { id: 'breath', icon: 'breathe.png',  label: 'Breathe', tint: '#E3EFF7' },
@@ -930,14 +1052,40 @@
                 { id: 'drag',   iconEl: <DragTileIcon />, label: 'Drag', tint: '#EDE7F6' },
             ];
 
-            const handleHomeClick = () => {
-                haptic();
-                onHome();
-            };
+            const handleHomeClick = () => { haptic(); onHome(); };
+            const handleToggleDark = () => { haptic(); onToggleDark(); };
 
             return (
                 <div className={`screen activities-screen ${isVisible ? 'visible' : ''}`}>
                     <LoopsyTopBar loopsyState={loopsyState} onAvatarClick={onLoopsyClick} />
+
+                    {/* Dark mode toggle — left of home button */}
+                    <button
+                        className="icon-button dark-toggle-btn"
+                        onClick={handleToggleDark}
+                        aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+                    >
+                        {isDark ? (
+                            /* Sun icon — shown in dark mode to switch back to light */
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                                <circle cx="12" cy="12" r="5"/>
+                                <line x1="12" y1="1"  x2="12" y2="3"/>
+                                <line x1="12" y1="21" x2="12" y2="23"/>
+                                <line x1="4.22" y1="4.22"   x2="5.64"  y2="5.64"/>
+                                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                                <line x1="1"  y1="12" x2="3"  y2="12"/>
+                                <line x1="21" y1="12" x2="23" y2="12"/>
+                                <line x1="4.22"  y1="19.78" x2="5.64"  y2="18.36"/>
+                                <line x1="18.36" y1="5.64"  x2="19.78" y2="4.22"/>
+                            </svg>
+                        ) : (
+                            /* Moon icon — shown in light mode to switch to dark */
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                            </svg>
+                        )}
+                    </button>
+
                     <button className="icon-button home-button" onClick={handleHomeClick} aria-label="Go back">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                             <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
@@ -1074,35 +1222,52 @@
             );
         }
         
-        // Activity: Breath — count, ripples, warm soft circle, breathe in/out label
+        // Activity: Breath — 3s inhale / 3s hold / 3s exhale, ripples, warm soft circle
         function BreathActivity({ onHome }) {
             const [scale, setScale] = useState(1);
             const [count, setCount] = useState(1);
             const [phaseLabel, setPhaseLabel] = useState('breathe in');
             const [ripples, setRipples] = useState([]);
             const rippleId = useRef(0);
-            const isInRef = useRef(true);
+            const phaseRef = useRef('in'); // 'in' | 'hold' | 'out'
 
-            const HALF_MS = 4000; // 4 s in, 4 s out
+            const INHALE_MS = 3000;
+            const HOLD_MS   = 3000;
+            const EXHALE_MS = 3000;
+            const CYCLE_MS  = INHALE_MS + HOLD_MS + EXHALE_MS;
 
             useEffect(() => {
                 const start = Date.now();
 
                 const tick = () => {
-                    const elapsed = Date.now() - start;
-                    const pos = elapsed % (HALF_MS * 2);
-                    const isIn = pos < HALF_MS;
-                    const t = isIn ? pos / HALF_MS : (pos - HALF_MS) / HALF_MS;
+                    const pos = (Date.now() - start) % CYCLE_MS;
 
-                    setScale(isIn ? 1 + t * 0.75 : 1.75 - t * 0.75);
-                    setCount(isIn
-                        ? Math.min(4, Math.floor(t * 4) + 1)
-                        : Math.max(1, 4 - Math.floor(t * 4)));
+                    let phase, t;
+                    if (pos < INHALE_MS) {
+                        phase = 'in';
+                        t = pos / INHALE_MS;
+                    } else if (pos < INHALE_MS + HOLD_MS) {
+                        phase = 'hold';
+                        t = (pos - INHALE_MS) / HOLD_MS;
+                    } else {
+                        phase = 'out';
+                        t = (pos - INHALE_MS - HOLD_MS) / EXHALE_MS;
+                    }
 
-                    // Spawn a ripple + update label on phase transition
-                    if (isIn !== isInRef.current) {
-                        isInRef.current = isIn;
-                        setPhaseLabel(isIn ? 'breathe in' : 'breathe out');
+                    // Scale: expand on inhale, hold at peak, contract on exhale
+                    const newScale =
+                        phase === 'in'   ? 1 + t * 0.75 :
+                        phase === 'hold' ? 1.75          :
+                        1.75 - t * 0.75;
+
+                    setScale(newScale);
+                    setCount(Math.min(3, Math.floor(t * 3) + 1));
+
+                    // Spawn ripple and update label on phase transition
+                    const label = phase === 'in' ? 'breathe in' : phase === 'hold' ? 'hold' : 'breathe out';
+                    if (label !== phaseRef.current) {
+                        phaseRef.current = label;
+                        setPhaseLabel(label);
                         setRipples(prev => {
                             const id = rippleId.current++;
                             return [...prev.slice(-3), { id }];
@@ -1153,10 +1318,10 @@
                         pointerEvents: 'none',
                     }} aria-hidden="true" />
 
-                    {/* Countdown / count-up number */}
+                    {/* Count number */}
                     <div className="breath-count" aria-hidden="true">{count}</div>
 
-                    {/* Phase label — breathe in / breathe out */}
+                    {/* Phase label — well below the circle at max scale */}
                     <div className="breath-label" aria-live="polite">{phaseLabel}</div>
                 </div>
             );
@@ -1170,23 +1335,24 @@
             const lastSpawnRef = useRef(0);
             const [pops, setPops] = useState([]); // DOM pop-burst overlays
 
-            // Pastel colour pairs [inner highlight, outer tint]
+            // Vivid colour pairs [inner highlight, outer tint] — high saturation for green bg
             const FLOAT_COLORS = [
-                { inner: 'rgba(255,210,228,0.78)', outer: 'rgba(255,185,215,0.5)'  }, // pink
-                { inner: 'rgba(205,225,255,0.78)', outer: 'rgba(185,210,255,0.5)'  }, // blue
-                { inner: 'rgba(208,255,218,0.78)', outer: 'rgba(185,255,200,0.5)'  }, // green
-                { inner: 'rgba(255,246,205,0.78)', outer: 'rgba(255,238,182,0.5)'  }, // yellow
-                { inner: 'rgba(238,212,255,0.78)', outer: 'rgba(222,190,255,0.5)'  }, // lavender
+                { inner: 'rgba(255,140,185,0.88)', outer: 'rgba(255,100,160,0.60)'  }, // hot pink
+                { inner: 'rgba(140,185,255,0.88)', outer: 'rgba(100,155,255,0.60)'  }, // cobalt blue
+                { inner: 'rgba(255,230,100,0.88)', outer: 'rgba(255,210,60,0.60)'   }, // bright yellow
+                { inner: 'rgba(200,130,255,0.88)', outer: 'rgba(170,90,255,0.60)'   }, // vivid purple
+                { inner: 'rgba(80,220,200,0.88)',  outer: 'rgba(40,190,170,0.60)'   }, // teal
+                { inner: 'rgba(255,160,100,0.88)', outer: 'rgba(255,130,60,0.60)'   }, // orange
             ];
 
             const spawnBubble = (W, H, scattered) => {
-                const r = 24 + Math.random() * 32; // radius 24–56 px
+                const r = 18 + Math.random() * 30; // radius 18–48 px — slightly smaller for more on screen
                 bubblesRef.current.push({
                     x: r + Math.random() * (W - 2 * r),
                     y: scattered ? r + Math.random() * (H - 2 * r) : H + r,
                     r,
-                    vy: -(0.55 + Math.random() * 0.85), // upward
-                    vx: (Math.random() - 0.5) * 0.32,
+                    vy: -(0.8 + Math.random() * 1.2),  // faster upward
+                    vx: (Math.random() - 0.5) * 0.55,  // more horizontal variation
                     colorIdx: Math.floor(Math.random() * FLOAT_COLORS.length),
                 });
             };
@@ -1228,15 +1394,15 @@
                 const H = canvas.height = window.innerHeight;
 
                 // Seed with bubbles already scattered across the screen
-                for (let i = 0; i < 11; i++) spawnBubble(W, H, true);
+                for (let i = 0; i < 18; i++) spawnBubble(W, H, true);
                 lastSpawnRef.current = Date.now();
 
                 const animate = () => {
                     ctx.clearRect(0, 0, W, H);
 
                     const now = Date.now();
-                    // Spawn a new bubble from the bottom every ~1.8 s
-                    if (now - lastSpawnRef.current > 1800) {
+                    // Spawn a new bubble from the bottom every ~1.1 s
+                    if (now - lastSpawnRef.current > 1100) {
                         lastSpawnRef.current = now;
                         spawnBubble(W, H, false);
                     }
@@ -1368,6 +1534,7 @@
                     });
                 }
 
+                let shiftRafId;
                 function animate() {
                     // Trail fade matches yellow background
                     ctx.fillStyle = 'rgba(255, 243, 205, 0.2)';
@@ -1390,11 +1557,12 @@
                         ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
                         ctx.fill();
                     });
-                    
-                    requestAnimationFrame(animate);
+
+                    shiftRafId = requestAnimationFrame(animate);
                 }
-                
+
                 animate();
+                return () => cancelAnimationFrame(shiftRafId);
             }, []);
             
             const handleTouch = (e) => {
@@ -1443,23 +1611,41 @@
             );
         }
 
-        // Activity: Tap — canvas physics (gravity + dot-dot collision + stacking)
+        // Activity: Tap — canvas physics, spatial-grid collision (never skipped), completion
         function TapActivity({ onHome }) {
-            const canvasRef = useRef(null);
-            const dotsRef = useRef([]);   // live physics array, mutated in RAF
-            const rafRef = useRef(null);
-            const nextId = useRef(0);
-            const lastTouchTime = useRef(0); // debounce touch→click double-fire
+            const canvasRef      = useRef(null);
+            const dotsRef        = useRef([]);
+            const rafRef         = useRef(null);
+            const nextId         = useRef(0);
+            const lastTouchTime  = useRef(0);
+            const completedRef   = useRef(false);
+            const onHomeRef      = useRef(onHome);
+            const [tapComplete, setTapComplete] = useState(false);
+
+            // Confetti pieces created once
+            const [confetti]     = useState(() => {
+                const palette = ['#F4C4D8','#D8C4F4','#C4F4D8','#F4DCC4','#C4D8F4','#F4ECC4'];
+                return Array.from({ length: 34 }, (_, i) => ({
+                    id: i,
+                    x:        4 + Math.random() * 92,
+                    size:     6 + Math.random() * 7,
+                    round:    Math.random() > 0.4,
+                    color:    palette[Math.floor(Math.random() * palette.length)],
+                    duration: 3.5 + Math.random() * 2.5,
+                    delay:    Math.random() * 1.6,
+                }));
+            });
 
             const DOT_COLORS = [
                 '#F4A7C3', '#A7C4F4', '#A7F4C4', '#F4D5A7',
                 '#C4A7F4', '#A7F4E4', '#F4A7A7', '#A7D5F4',
                 '#F4C4A7', '#BDA7F4'
             ];
-            const GRAVITY = 0.18;   // gentle downward pull
-            const FLOOR_DAMP = 0.12; // energy kept on floor bounce (soft stop)
+            const GRAVITY    = 0.18;
+            const FLOOR_DAMP = 0.12;
             const WALL_DAMP  = 0.4;
-            // No dot cap — fill the screen! Collision skips at high density for performance.
+
+            useEffect(() => { onHomeRef.current = onHome; }, [onHome]);
 
             useEffect(() => {
                 const canvas = canvasRef.current;
@@ -1467,36 +1653,58 @@
                 canvas.width  = window.innerWidth;
                 canvas.height = window.innerHeight;
 
-                // ── Two-pass collision resolution ──────────────────────────
+                // ── Spatial-grid collision — O(n) average, never skipped ──
                 function resolveCollisions() {
                     const dots = dotsRef.current;
-                    if (dots.length > 120) return; // skip O(n²) at high density
-                    for (let pass = 0; pass < 2; pass++) {
-                        for (let i = 0; i < dots.length; i++) {
-                            for (let j = i + 1; j < dots.length; j++) {
-                                const a = dots[i], b = dots[j];
-                                const dx = b.x - a.x;
-                                const dy = b.y - a.y;
-                                const distSq = dx * dx + dy * dy;
-                                const minDist = a.r + b.r;
-                                if (distSq >= minDist * minDist) continue;
+                    if (dots.length < 2) return;
+                    const W = canvas.width, H = canvas.height;
+                    const CELL  = 62; // slightly > 2 × max radius (29)
+                    const gcols = Math.ceil(W / CELL) + 1;
+                    const grows = Math.ceil(H / CELL) + 1;
+                    const grid  = Array.from({ length: gcols * grows }, () => []);
 
-                                const dist = Math.sqrt(distSq) || 0.001;
-                                const overlap = minDist - dist;
-                                const nx = dx / dist, ny = dy / dist;
+                    for (const d of dots) {
+                        const ci = Math.max(0, Math.min(gcols - 1, (d.x / CELL) | 0));
+                        const ri = Math.max(0, Math.min(grows - 1, (d.y / CELL) | 0));
+                        grid[ri * gcols + ci].push(d);
+                    }
 
-                                // Push apart (equal share)
-                                const push = overlap * 0.5;
-                                a.x -= nx * push; a.y -= ny * push;
-                                b.x += nx * push; b.y += ny * push;
+                    const check = (a, b) => {
+                        const dx = b.x - a.x, dy = b.y - a.y;
+                        const d2 = dx * dx + dy * dy;
+                        const mn = a.r + b.r;
+                        if (d2 >= mn * mn) return;
+                        const d  = Math.sqrt(d2) || 0.001;
+                        const ov = mn - d;
+                        const nx = dx / d, ny = dy / d;
+                        const push = ov * 0.5;
+                        a.x -= nx * push; a.y -= ny * push;
+                        b.x += nx * push; b.y += ny * push;
+                        const dvx = a.vx - b.vx, dvy = a.vy - b.vy;
+                        const dot = dvx * nx + dvy * ny;
+                        if (dot > 0) {
+                            const imp = dot * 0.28;
+                            a.vx -= imp * nx; a.vy -= imp * ny;
+                            b.vx += imp * nx; b.vy += imp * ny;
+                        }
+                    };
 
-                                // Soft velocity exchange
-                                const dvx = a.vx - b.vx, dvy = a.vy - b.vy;
-                                const dot = dvx * nx + dvy * ny;
-                                if (dot > 0) {
-                                    const imp = dot * 0.28; // low restitution = calm
-                                    a.vx -= imp * nx; a.vy -= imp * ny;
-                                    b.vx += imp * nx; b.vy += imp * ny;
+                    for (let ri = 0; ri < grows; ri++) {
+                        for (let ci = 0; ci < gcols; ci++) {
+                            const cell = grid[ri * gcols + ci];
+                            for (let i = 0; i < cell.length; i++)
+                                for (let j = i + 1; j < cell.length; j++)
+                                    check(cell[i], cell[j]);
+                            if (ci + 1 < gcols) {
+                                const right = grid[ri * gcols + ci + 1];
+                                for (const a of cell) for (const b of right) check(a, b);
+                            }
+                            if (ri + 1 < grows) {
+                                for (let dci = -1; dci <= 1; dci++) {
+                                    const nci = ci + dci;
+                                    if (nci < 0 || nci >= gcols) continue;
+                                    const below = grid[(ri + 1) * gcols + nci];
+                                    for (const a of cell) for (const b of below) check(a, b);
                                 }
                             }
                         }
@@ -1509,35 +1717,39 @@
 
                     const dots = dotsRef.current;
                     for (const d of dots) {
-                        // Gravity
                         d.vy += GRAVITY;
+                        d.x  += d.vx;
+                        d.y  += d.vy;
 
-                        // Integrate
-                        d.x += d.vx;
-                        d.y += d.vy;
-
-                        // Floor — soft stop, tiny horizontal friction
                         if (d.y + d.r >= H) {
                             d.y = H - d.r;
                             d.vy *= -FLOOR_DAMP;
                             d.vx *= 0.88;
                             if (Math.abs(d.vy) < 0.3) d.vy = 0;
                         }
-                        // Walls
                         if (d.x - d.r < 0)  { d.x = d.r;     d.vx *= -WALL_DAMP; }
                         if (d.x + d.r > W)  { d.x = W - d.r; d.vx *= -WALL_DAMP; }
-                        // Ceiling
                         if (d.y - d.r < 0)  { d.y = d.r;     d.vy *= -WALL_DAMP; }
                     }
 
                     resolveCollisions();
 
-                    // Draw — flat circles, no shadows
                     for (const d of dots) {
                         ctx.beginPath();
                         ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
                         ctx.fillStyle = d.color;
                         ctx.fill();
+                    }
+
+                    // Completion: trigger when balls fill ~62% of screen area
+                    if (!completedRef.current && dots.length > 20) {
+                        let totalArea = 0;
+                        for (const d of dots) totalArea += Math.PI * d.r * d.r;
+                        if (totalArea > W * H * 0.62) {
+                            completedRef.current = true;
+                            setTapComplete(true);
+                            setTimeout(() => { onHomeRef.current(); }, 2500);
+                        }
                     }
 
                     rafRef.current = requestAnimationFrame(animate);
@@ -1550,15 +1762,15 @@
             const spawnDot = (clientX, clientY) => {
                 const canvas = canvasRef.current;
                 const rect = canvas.getBoundingClientRect();
-                const r = 16 + Math.random() * 13; // radius 16–29px
+                const r = 16 + Math.random() * 13;
                 dotsRef.current.push({
-                    id: nextId.current++,
-                    x: clientX - rect.left,
-                    y: clientY - rect.top,
-                    vx: (Math.random() - 0.5) * 1.5,
-                    vy: 0,
+                    id:    nextId.current++,
+                    x:     clientX - rect.left,
+                    y:     clientY - rect.top,
+                    vx:    (Math.random() - 0.5) * 1.5,
+                    vy:    0,
                     r,
-                    color: DOT_COLORS[Math.floor(Math.random() * DOT_COLORS.length)]
+                    color: DOT_COLORS[Math.floor(Math.random() * DOT_COLORS.length)],
                 });
             };
 
@@ -1569,7 +1781,6 @@
                 for (const t of e.touches) spawnDot(t.clientX, t.clientY);
             };
 
-            // Mouse fallback (desktop preview) — won't double-fire after touch
             const handleMouseDown = (e) => {
                 if (e.target.closest('.icon-button')) return;
                 if (Date.now() - lastTouchTime.current < 600) return;
@@ -1592,6 +1803,26 @@
                         </svg>
                     </button>
                     <canvas ref={canvasRef} style={{ display: 'block', touchAction: 'none' }} />
+
+                    {/* Completion overlay */}
+                    {tapComplete && (
+                        <>
+                            {confetti.map(p => (
+                                <div key={p.id} aria-hidden="true" style={{
+                                    position: 'absolute',
+                                    left: `${p.x}%`,
+                                    top: '-14px',
+                                    width: p.size, height: p.size,
+                                    borderRadius: p.round ? '50%' : '3px',
+                                    background: p.color,
+                                    opacity: 0,
+                                    animation: `confettiFall ${p.duration}s ${p.delay}s ease-in forwards`,
+                                    pointerEvents: 'none',
+                                }} />
+                            ))}
+                            <div className="game-complete-msg">Nice one!</div>
+                        </>
+                    )}
                 </div>
             );
         }
@@ -1946,77 +2177,202 @@
             );
         }
 
-        // Activity: Drag — colour-sorting game with bucket + 3 test tubes
+        // Activity: Drag — colour-sorting; bucket has live physics, tubes half-size with coloured outlines
         function DragActivity({ onHome }) {
-            const BALL_R = 14; // px radius
+            const BALL_R     = 9;   // px radius (smaller to fit half-size tubes)
+            const TUBE_W     = 24;  // px width (half original)
+            const TUBE_TOP   = 8;   // % from top
+            const TUBE_BOT   = 88;  // % from top
+            const GRAVITY    = 0.28;
+            const FLOOR_DAMP = 0.14;
+            const WALL_DAMP  = 0.35;
 
-            // Layout constants (% of screen unless labelled px)
-            const BKT = { l: 3, t: 13, w: 44, h: 73 }; // bucket bounds
             const TUBE_DEFS = [
-                { cx: 58, color: 'purple' },
-                { cx: 73, color: 'green'  },
-                { cx: 88, color: 'blue'   },
+                { cx: 62, color: 'purple' },
+                { cx: 76, color: 'green'  },
+                { cx: 90, color: 'blue'   },
             ];
-            const TUBE_TOP = 10;  // % from top
-            const TUBE_BOT = 85;  // % from top
-            const TUBE_W   = 46;  // px
 
+            // Tube outline colours match each ball colour
             const COLORS = {
-                purple: { fill: '#C8A0E0', dark: '#9868B8', pale: 'rgba(200,160,224,0.88)' },
-                green:  { fill: '#8ECCA8', dark: '#55956E', pale: 'rgba(142,204,168,0.88)' },
-                blue:   { fill: '#8ABCDC', dark: '#4C8AAC', pale: 'rgba(138,188,220,0.88)' },
+                purple: { fill: '#C8A0E0', dark: '#9868B8', pale: 'rgba(200,160,224,0.88)', tube: 'rgba(155,90,210,0.65)'  },
+                green:  { fill: '#8ECCA8', dark: '#55956E', pale: 'rgba(142,204,168,0.88)', tube: 'rgba(60,140,90,0.65)'   },
+                blue:   { fill: '#8ABCDC', dark: '#4C8AAC', pale: 'rgba(138,188,220,0.88)', tube: 'rgba(55,115,185,0.65)'  },
             };
 
-            // Balls stored with bx/by as position inside bucket (0–100%)
-            const [balls, setBalls] = useState(() => {
-                const cols = ['purple', 'green', 'blue'];
-                return cols.flatMap((color, ci) =>
-                    Array.from({ length: 10 }, (_, i) => ({
-                        id: `${color}-${i}`,
-                        color,
-                        bx: 8  + ((ci * 18 + i * 14) % 78),
-                        by: 10 + ((ci * 23 + i * 17) % 76),
-                        placed: false,
-                    }))
-                );
-            });
+            const bucketCanvasRef = useRef(null);
+            const containerRef    = useRef(null);
+            const bucketBallsRef  = useRef([]);   // physics array
+            const bucketRafRef    = useRef(null);
+            const dragRef         = useRef(null);
+            const completedRef    = useRef(false);
+            const onHomeRef       = useRef(onHome);
+            const nextId          = useRef(0);
 
-            const [tubes, setTubes] = useState([
+            const [drag, setDrag]     = useState(null);   // { id, color, clientX, clientY }
+            const [tubes, setTubes]   = useState([
                 { color: 'purple', balls: [] },
                 { color: 'green',  balls: [] },
                 { color: 'blue',   balls: [] },
             ]);
+            const [complete, setComplete] = useState(false);
+            const [confetti, setConfetti] = useState([]);
 
-            const [drag, setDrag] = useState(null); // { id, clientX, clientY }
-            const dragRef      = useRef(null);
-            const containerRef = useRef(null);
-            const rectRef      = useRef(null);
+            useEffect(() => { onHomeRef.current = onHome; }, [onHome]);
+
+            // Completion: watch tubes for all 30 placed
+            useEffect(() => {
+                const total = tubes.reduce((s, t) => s + t.balls.length, 0);
+                if (total === 30 && !completedRef.current) {
+                    completedRef.current = true;
+                    const palette = ['#F4C4D8','#D8C4F4','#C4F4D8','#F4DCC4','#C4D8F4','#F4ECC4'];
+                    setConfetti(Array.from({ length: 34 }, (_, i) => ({
+                        id: i,
+                        x:        4 + Math.random() * 92,
+                        size:     6 + Math.random() * 8,
+                        round:    Math.random() > 0.4,
+                        color:    palette[(Math.random() * palette.length) | 0],
+                        duration: 3.5 + Math.random() * 2,
+                        delay:    Math.random() * 1.4,
+                    })));
+                    setComplete(true);
+                    setTimeout(() => { onHomeRef.current(); }, 3200);
+                }
+            }, [tubes]);
+
+            // Bucket canvas + physics RAF
+            useEffect(() => {
+                const canvas = bucketCanvasRef.current;
+                // Read actual rendered pixel size after layout
+                const cRect = canvas.getBoundingClientRect();
+                const BW = canvas.width  = Math.round(cRect.width);
+                const BH = canvas.height = Math.round(cRect.height);
+
+                const ctx = canvas.getContext('2d');
+
+                // Seed 30 balls (10 per colour) with a drop velocity so they fall and settle
+                const cols = ['purple', 'green', 'blue'];
+                cols.forEach(color => {
+                    for (let i = 0; i < 10; i++) {
+                        bucketBallsRef.current.push({
+                            id:    nextId.current++,
+                            color,
+                            x:     BALL_R + Math.random() * (BW - BALL_R * 2),
+                            y:     BALL_R + Math.random() * (BH * 0.45),
+                            vx:    (Math.random() - 0.5) * 2,
+                            vy:    Math.random() * 1.5,
+                            r:     BALL_R,
+                        });
+                    }
+                });
+
+                // Spatial-grid collision (same algorithm as Tap)
+                function resolveCollisions() {
+                    const balls = bucketBallsRef.current;
+                    if (balls.length < 2) return;
+                    const CELL  = BALL_R * 2.8;
+                    const gcols = Math.ceil(BW / CELL) + 1;
+                    const grows = Math.ceil(BH / CELL) + 1;
+                    const grid  = Array.from({ length: gcols * grows }, () => []);
+                    for (const b of balls) {
+                        const ci = Math.max(0, Math.min(gcols - 1, (b.x / CELL) | 0));
+                        const ri = Math.max(0, Math.min(grows - 1, (b.y / CELL) | 0));
+                        grid[ri * gcols + ci].push(b);
+                    }
+                    const check = (a, b) => {
+                        const dx = b.x - a.x, dy = b.y - a.y;
+                        const d2 = dx * dx + dy * dy;
+                        const mn = a.r + b.r;
+                        if (d2 >= mn * mn) return;
+                        const d  = Math.sqrt(d2) || 0.001;
+                        const ov = mn - d;
+                        const nx = dx / d, ny = dy / d;
+                        const push = ov * 0.5;
+                        a.x -= nx * push; a.y -= ny * push;
+                        b.x += nx * push; b.y += ny * push;
+                        const dvx = a.vx - b.vx, dvy = a.vy - b.vy;
+                        const dot = dvx * nx + dvy * ny;
+                        if (dot > 0) {
+                            const imp = dot * 0.3;
+                            a.vx -= imp * nx; a.vy -= imp * ny;
+                            b.vx += imp * nx; b.vy += imp * ny;
+                        }
+                    };
+                    for (let ri = 0; ri < grows; ri++) {
+                        for (let ci = 0; ci < gcols; ci++) {
+                            const cell = grid[ri * gcols + ci];
+                            for (let i = 0; i < cell.length; i++)
+                                for (let j = i + 1; j < cell.length; j++)
+                                    check(cell[i], cell[j]);
+                            if (ci + 1 < gcols) {
+                                const right = grid[ri * gcols + ci + 1];
+                                for (const a of cell) for (const b of right) check(a, b);
+                            }
+                            if (ri + 1 < grows) {
+                                for (let dci = -1; dci <= 1; dci++) {
+                                    const nci = ci + dci;
+                                    if (nci < 0 || nci >= gcols) continue;
+                                    const below = grid[(ri + 1) * gcols + nci];
+                                    for (const a of cell) for (const b of below) check(a, b);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                const animate = () => {
+                    ctx.clearRect(0, 0, BW, BH);
+                    const balls = bucketBallsRef.current;
+                    for (const b of balls) {
+                        b.vy += GRAVITY;
+                        b.x  += b.vx;
+                        b.y  += b.vy;
+                        if (b.y + b.r >= BH) { b.y = BH - b.r; b.vy *= -FLOOR_DAMP; b.vx *= 0.88; if (Math.abs(b.vy) < 0.3) b.vy = 0; }
+                        if (b.x - b.r < 0)   { b.x = b.r;      b.vx *= -WALL_DAMP; }
+                        if (b.x + b.r > BW)  { b.x = BW - b.r; b.vx *= -WALL_DAMP; }
+                        if (b.y - b.r < 0)   { b.y = b.r;      b.vy *= -WALL_DAMP; }
+                    }
+                    resolveCollisions();
+                    // Draw each ball with a radial gradient
+                    for (const b of balls) {
+                        const c = COLORS[b.color];
+                        const g = ctx.createRadialGradient(b.x - b.r * 0.3, b.y - b.r * 0.3, 1, b.x, b.y, b.r);
+                        g.addColorStop(0,   'rgba(255,255,255,0.72)');
+                        g.addColorStop(0.5, c.pale);
+                        g.addColorStop(1,   c.dark);
+                        ctx.beginPath();
+                        ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+                        ctx.fillStyle = g;
+                        ctx.fill();
+                    }
+                    bucketRafRef.current = requestAnimationFrame(animate);
+                };
+
+                animate();
+                return () => cancelAnimationFrame(bucketRafRef.current);
+            }, []);
 
             const handlePointerDown = (e) => {
                 if (e.target.closest('.icon-button')) return;
+                if (completedRef.current) return;
                 e.preventDefault();
 
-                const rect = containerRef.current.getBoundingClientRect();
-                rectRef.current = rect;
-                const sx = e.clientX - rect.left;
-                const sy = e.clientY - rect.top;
+                const canvas  = bucketCanvasRef.current;
+                const cRect   = canvas.getBoundingClientRect();
+                const cx = e.clientX - cRect.left;
+                const cy = e.clientY - cRect.top;
 
-                // Convert to bucket pixel space
-                const bL = rect.width  * BKT.l / 100;
-                const bT = rect.height * BKT.t / 100;
-                const bW = rect.width  * BKT.w / 100;
-                const bH = rect.height * BKT.h / 100;
+                // Only pick from bucket canvas area
+                if (cx < 0 || cy < 0 || cx > cRect.width || cy > cRect.height) return;
 
-                // Find topmost unplaced ball hit
-                const unplaced = balls.filter(b => !b.placed && b.id !== drag?.id);
-                for (let i = unplaced.length - 1; i >= 0; i--) {
-                    const b = unplaced[i];
-                    const bx = bL + b.bx / 100 * bW;
-                    const by = bT + b.by / 100 * bH;
-                    const dx = sx - bx, dy = sy - by;
-                    if (dx * dx + dy * dy < (BALL_R + 8) * (BALL_R + 8)) {
+                const balls = bucketBallsRef.current;
+                for (let i = balls.length - 1; i >= 0; i--) {
+                    const b = balls[i];
+                    const dx = cx - b.x, dy = cy - b.y;
+                    if (dx * dx + dy * dy < (b.r + 7) * (b.r + 7)) {
                         haptic();
-                        const info = { id: b.id, clientX: e.clientX, clientY: e.clientY };
+                        const [removed] = balls.splice(i, 1);
+                        const info = { id: removed.id, color: removed.color, clientX: e.clientX, clientY: e.clientY };
                         dragRef.current = info;
                         setDrag(info);
                         break;
@@ -2034,40 +2390,45 @@
 
             const handlePointerUp = (e) => {
                 if (!dragRef.current) return;
-                const { id } = dragRef.current;
+                const { id, color } = dragRef.current;
                 dragRef.current = null;
 
-                const rect = rectRef.current || containerRef.current.getBoundingClientRect();
+                const rect = containerRef.current.getBoundingClientRect();
                 const sx = e.clientX - rect.left;
                 const sy = e.clientY - rect.top;
-                const draggedBall = balls.find(b => b.id === id);
 
-                if (draggedBall) {
-                    for (let ti = 0; ti < TUBE_DEFS.length; ti++) {
-                        const tubeCx  = rect.width  * TUBE_DEFS[ti].cx / 100;
-                        const tubeTop = rect.height * TUBE_TOP / 100;
-                        const tubeBot = rect.height * TUBE_BOT / 100;
-                        const hitX = Math.abs(sx - tubeCx) < TUBE_W / 2 + 14;
-                        const hitY = sy >= tubeTop - 24 && sy <= tubeBot + 24;
+                let placed = false;
+                for (let ti = 0; ti < TUBE_DEFS.length; ti++) {
+                    const tubeCx  = rect.width  * TUBE_DEFS[ti].cx / 100;
+                    const tubeTop = rect.height * TUBE_TOP / 100;
+                    const tubeBot = rect.height * TUBE_BOT / 100;
+                    const hitX = Math.abs(sx - tubeCx) < TUBE_W / 2 + 18;
+                    const hitY = sy >= tubeTop - 30 && sy <= tubeBot + 30;
 
-                        if (hitX && hitY && draggedBall.color === TUBE_DEFS[ti].color) {
-                            haptic();
-                            setBalls(prev => prev.map(b => b.id === id ? { ...b, placed: true } : b));
-                            setTubes(prev => {
-                                const t = [...prev];
-                                t[ti] = { ...t[ti], balls: [...t[ti].balls, draggedBall] };
-                                return t;
-                            });
-                            break;
-                        }
+                    if (hitX && hitY && color === TUBE_DEFS[ti].color) {
+                        haptic();
+                        setTubes(prev => prev.map((t, i) =>
+                            i === ti ? { ...t, balls: [...t.balls, { id, color }] } : t
+                        ));
+                        placed = true;
+                        break;
                     }
                 }
+
+                if (!placed) {
+                    // Return ball to bucket physics at drop position
+                    const canvas = bucketCanvasRef.current;
+                    const cRect  = canvas.getBoundingClientRect();
+                    bucketBallsRef.current.push({
+                        id, color,
+                        x:  Math.max(BALL_R, Math.min(canvas.width  - BALL_R, e.clientX - cRect.left)),
+                        y:  Math.max(BALL_R, Math.min(canvas.height - BALL_R, e.clientY - cRect.top)),
+                        vx: 0, vy: 0, r: BALL_R,
+                    });
+                }
+
                 setDrag(null);
             };
-
-            const dragBall    = drag ? balls.find(b => b.id === drag.id) : null;
-            const totalPlaced = tubes.reduce((s, t) => s + t.balls.length, 0);
-            const isComplete  = totalPlaced === 30;
 
             const handleHomeClick = () => { haptic(); onHome(); };
 
@@ -2088,32 +2449,30 @@
                         </svg>
                     </button>
 
-                    {/* Bucket */}
+                    {/* Bucket outline behind the canvas */}
                     <div style={{
                         position: 'absolute',
-                        left: `${BKT.l}%`, top: `${BKT.t}%`,
-                        width: `${BKT.w}%`, height: `${BKT.h}%`,
-                        background: 'rgba(255, 255, 255, 0.34)',
-                        border: '2px solid rgba(175, 168, 200, 0.35)',
+                        left: '2%', top: '10%',
+                        width: '48%', height: '80%',
+                        background: 'rgba(255,255,255,0.28)',
+                        border: '1.5px solid rgba(175,168,200,0.28)',
                         borderRadius: '18px',
-                        backdropFilter: 'blur(8px)',
-                        WebkitBackdropFilter: 'blur(8px)',
-                    }}>
-                        {balls.filter(b => !b.placed && b.id !== drag?.id).map(b => (
-                            <div key={b.id} style={{
-                                position: 'absolute',
-                                left: `${b.bx}%`, top: `${b.by}%`,
-                                width:  BALL_R * 2, height: BALL_R * 2,
-                                borderRadius: '50%',
-                                background: `radial-gradient(circle at 36% 30%, rgba(255,255,255,0.58), ${COLORS[b.color].pale} 52%, ${COLORS[b.color].dark} 100%)`,
-                                transform: 'translate(-50%, -50%)',
-                                boxShadow: '0 2px 8px rgba(0,0,0,0.13)',
-                                pointerEvents: 'none',
-                            }} />
-                        ))}
-                    </div>
+                        pointerEvents: 'none',
+                    }} aria-hidden="true" />
 
-                    {/* Test tubes */}
+                    {/* Bucket physics canvas — sits inside the bucket outline */}
+                    <canvas
+                        ref={bucketCanvasRef}
+                        style={{
+                            position: 'absolute',
+                            left: '2%', top: '10%',
+                            width: '48%', height: '80%',
+                            borderRadius: '16px',
+                            pointerEvents: 'none',
+                        }}
+                    />
+
+                    {/* Test tubes — half-size, outlined in ball colour */}
                     {TUBE_DEFS.map((td, ti) => (
                         <div key={ti} style={{
                             position: 'absolute',
@@ -2121,59 +2480,69 @@
                             top:  `${TUBE_TOP}%`,
                             width:  TUBE_W,
                             height: `${TUBE_BOT - TUBE_TOP}%`,
-                            background: 'rgba(255, 255, 255, 0.14)',
-                            border: '2.5px solid rgba(175, 168, 210, 0.42)',
+                            background: 'rgba(255,255,255,0.10)',
+                            border: `2px solid ${COLORS[td.color].tube}`,
                             borderTop: 'none',
                             borderRadius: `0 0 ${TUBE_W / 2}px ${TUBE_W / 2}px`,
-                            backdropFilter: 'blur(4px)',
-                            WebkitBackdropFilter: 'blur(4px)',
                             overflow: 'hidden',
                         }}>
-                            {/* Colour indicator dot above tube opening */}
+                            {/* Colour dot above tube mouth */}
                             <div style={{
                                 position: 'absolute',
-                                top: -20, left: '50%',
+                                top: -12, left: '50%',
                                 transform: 'translateX(-50%)',
-                                width: 13, height: 13,
+                                width: 8, height: 8,
                                 borderRadius: '50%',
                                 background: COLORS[td.color].fill,
-                                boxShadow: `0 0 8px ${COLORS[td.color].fill}`,
+                                boxShadow: `0 0 6px ${COLORS[td.color].fill}`,
                             }} aria-hidden="true" />
-                            {/* Balls stacked from the bottom */}
+                            {/* Balls stacked from bottom */}
                             {tubes[ti].balls.map((ball, idx) => (
                                 <div key={ball.id} style={{
                                     position: 'absolute',
-                                    bottom: 4 + idx * (BALL_R * 2 + 2),
+                                    bottom: 2 + idx * (BALL_R * 2 + 1),
                                     left: '50%',
                                     transform: 'translateX(-50%)',
-                                    width:  BALL_R * 2, height: BALL_R * 2,
+                                    width: BALL_R * 2, height: BALL_R * 2,
                                     borderRadius: '50%',
-                                    background: `radial-gradient(circle at 36% 30%, rgba(255,255,255,0.52), ${COLORS[ball.color].pale} 52%, ${COLORS[ball.color].dark})`,
-                                    boxShadow: '0 1px 5px rgba(0,0,0,0.1)',
+                                    background: `radial-gradient(circle at 36% 30%, rgba(255,255,255,0.6), ${COLORS[ball.color].pale} 50%, ${COLORS[ball.color].dark})`,
                                 }} />
                             ))}
                         </div>
                     ))}
 
-                    {/* Ball following the pointer while dragging */}
-                    {dragBall && drag && (
+                    {/* Dragged ball follows pointer */}
+                    {drag && (
                         <div style={{
                             position: 'fixed',
-                            left: drag.clientX,
-                            top:  drag.clientY,
-                            width:  BALL_R * 2, height: BALL_R * 2,
+                            left: drag.clientX, top: drag.clientY,
+                            width: BALL_R * 2, height: BALL_R * 2,
                             borderRadius: '50%',
-                            background: `radial-gradient(circle at 36% 30%, rgba(255,255,255,0.62), ${COLORS[dragBall.color].pale} 48%, ${COLORS[dragBall.color].dark})`,
-                            transform: 'translate(-50%, -50%) scale(1.18)',
-                            boxShadow: '0 6px 18px rgba(0,0,0,0.2)',
+                            background: `radial-gradient(circle at 36% 30%, rgba(255,255,255,0.68), ${COLORS[drag.color].pale} 48%, ${COLORS[drag.color].dark})`,
+                            transform: 'translate(-50%, -50%) scale(1.3)',
+                            boxShadow: '0 6px 18px rgba(0,0,0,0.22)',
                             pointerEvents: 'none',
                             zIndex: 500,
                         }} />
                     )}
 
-                    {/* Gentle completion notice */}
-                    {isComplete && (
-                        <div className="drag-complete-badge">all sorted</div>
+                    {/* Completion overlay */}
+                    {complete && (
+                        <>
+                            {confetti.map(p => (
+                                <div key={p.id} aria-hidden="true" style={{
+                                    position: 'absolute',
+                                    left: `${p.x}%`, top: '-14px',
+                                    width: p.size, height: p.size,
+                                    borderRadius: p.round ? '50%' : '3px',
+                                    background: p.color,
+                                    opacity: 0,
+                                    animation: `confettiFall ${p.duration}s ${p.delay}s ease-in forwards`,
+                                    pointerEvents: 'none',
+                                }} />
+                            ))}
+                            <div className="game-complete-msg">Well done!</div>
+                        </>
                     )}
                 </div>
             );
@@ -2189,6 +2558,7 @@
             const [pendingLoopsyState, setPendingLoopsyState] = useState(null);
             const [showExitOverlay, setShowExitOverlay] = useState(false);
             const [showCharacterScreen, setShowCharacterScreen] = useState(false);
+            const [isDark, setIsDark] = useState(false);
 
             const handleSwipeUp = () => {
                 setShowHome(false);
@@ -2238,7 +2608,7 @@
             };
 
             return (
-                <div id="app">
+                <div id="app" className={isDark ? 'dark-mode' : ''}>
                     {showExitOverlay && pendingLoopsyState && (
                         <ExitOverlay
                             loopsyState={loopsyState}
@@ -2264,6 +2634,8 @@
                                 isVisible={showActivities}
                                 loopsyState={loopsyState}
                                 onLoopsyClick={() => { haptic(); setShowCharacterScreen(true); }}
+                                isDark={isDark}
+                                onToggleDark={() => setIsDark(d => !d)}
                             />
                         </>
                     )}
