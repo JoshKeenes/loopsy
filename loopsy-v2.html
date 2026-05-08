@@ -58,8 +58,8 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            backdrop-filter: blur(10px);
-            transition: all 0.2s ease;
+            /* No backdrop-filter — avoids compositing-layer repaint bug on theme toggle */
+            transition: background 0.2s ease, color 0.2s ease;
         }
 
         .icon-button:active {
@@ -378,12 +378,14 @@
             top: 0;
             left: 0;
             right: 0;
-            height: calc(64px + env(safe-area-inset-top));
+            height: calc(84px + env(safe-area-inset-top));
             padding-top: env(safe-area-inset-top);
             display: flex;
             align-items: center;
-            padding-left: 76px;
-            padding-right: 76px;
+            /* left: clear avatar (16px left + 44px wide + 12px gap = 72px)        */
+            /* right: clear dark-toggle (76px right + 44px wide + 16px gap = 136px) */
+            padding-left: 72px;
+            padding-right: 136px;
             z-index: 10;
             pointer-events: none;
         }
@@ -391,7 +393,7 @@
         .loopsy-avatar-btn {
             position: absolute;
             left: 16px;
-            top: calc(10px + env(safe-area-inset-top));
+            top: calc(20px + env(safe-area-inset-top));
             width: 44px;
             height: 44px;
             background: rgba(58, 58, 58, 0.06);
@@ -741,9 +743,15 @@
 
         /* ── Dark mode — WCAG 2.2 AA palette ── */
         /* Primary text #EDE8F8 on #1C1826 ≈ 12:1 ✓  Secondary #B8AED0 ≈ 6:1 ✓  Muted #8A80A0 ≈ 4.5:1 ✓ */
+
+        /* All screens (dashboard + every game) get the dark background */
+        #app.dark-mode .screen {
+            background: #1C1826 !important;
+        }
+
         #app.dark-mode .home-screen,
         #app.dark-mode .activities-screen {
-            background: linear-gradient(180deg, #1C1826 0%, #211D2F 100%);
+            background: linear-gradient(180deg, #1C1826 0%, #211D2F 100%) !important;
         }
 
         #app.dark-mode .app-title {
@@ -2179,10 +2187,10 @@
 
         // Activity: Drag — colour-sorting; bucket has live physics, tubes half-size with coloured outlines
         function DragActivity({ onHome }) {
-            const BALL_R     = 9;   // px radius (smaller to fit half-size tubes)
-            const TUBE_W     = 24;  // px width (half original)
-            const TUBE_TOP   = 8;   // % from top
-            const TUBE_BOT   = 88;  // % from top
+            const BALL_R     = 14;  // px radius (9 × 1.5 ≈ 14, rounded)
+            const TUBE_W     = BALL_R * 2; // tube width exactly matches ball diameter
+            const TUBE_TOP   = 28;  // % — vertically centred (bucket is 28%–72%)
+            const TUBE_BOT   = 72;  // %
             const GRAVITY    = 0.28;
             const FLOOR_DAMP = 0.14;
             const WALL_DAMP  = 0.35;
@@ -2452,8 +2460,8 @@
                     {/* Bucket outline behind the canvas */}
                     <div style={{
                         position: 'absolute',
-                        left: '2%', top: '10%',
-                        width: '48%', height: '80%',
+                        left: '2%', top: '28%',
+                        width: '48%', height: '44%',
                         background: 'rgba(255,255,255,0.28)',
                         border: '1.5px solid rgba(175,168,200,0.28)',
                         borderRadius: '18px',
@@ -2465,8 +2473,8 @@
                         ref={bucketCanvasRef}
                         style={{
                             position: 'absolute',
-                            left: '2%', top: '10%',
-                            width: '48%', height: '80%',
+                            left: '2%', top: '28%',
+                            width: '48%', height: '44%',
                             borderRadius: '16px',
                             pointerEvents: 'none',
                         }}
