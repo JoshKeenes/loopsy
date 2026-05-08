@@ -647,6 +647,74 @@
             100% { transform: translateY(115vh) rotate(520deg); opacity: 0; }
         }
 
+        /* ── Float game pop burst ── */
+        @keyframes popParticle {
+            0%   { opacity: 0.88; transform: translate(-50%, -50%) translate(0, 0) scale(1); }
+            100% { opacity: 0;    transform: translate(-50%, -50%) translate(var(--tx), var(--ty)) scale(0); }
+        }
+
+        /* ── Breath phase label ── */
+        .breath-label {
+            position: absolute;
+            top: calc(50% + 58px);
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 14px;
+            font-weight: 300;
+            color: rgba(90, 82, 96, 0.38);
+            letter-spacing: 2px;
+            white-space: nowrap;
+            pointer-events: none;
+            user-select: none;
+            z-index: 5;
+        }
+
+        /* ── Character screen reset button ── */
+        .reset-btn {
+            position: absolute;
+            bottom: calc(36px + env(safe-area-inset-bottom));
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            background: rgba(58, 58, 58, 0.07);
+            border: none;
+            border-radius: 22px;
+            padding: 10px 20px;
+            color: rgba(58, 58, 58, 0.5);
+            font-size: 14px;
+            font-weight: 400;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .reset-btn:active {
+            transform: translateX(-50%) scale(0.94);
+            background: rgba(58, 58, 58, 0.12);
+        }
+
+        /* ── Drag sorting game ── */
+        .drag-complete-badge {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.92);
+            border: 1px solid rgba(58, 58, 58, 0.08);
+            border-radius: 20px;
+            padding: 18px 32px;
+            font-size: 19px;
+            font-weight: 400;
+            color: #5A5260;
+            text-align: center;
+            letter-spacing: 0.3px;
+            z-index: 50;
+            pointer-events: none;
+        }
+
         /* ── Sensory safety: respect OS reduced-motion preference ── */
         @media (prefers-reduced-motion: reduce) {
             .loopsy-float,
@@ -714,27 +782,37 @@
         // Home Screen
         function HomeScreen({ onSwipeUp, isVisible }) {
             const [touchStart, setTouchStart] = useState(0);
-            
+            const mouseStartY = useRef(0);
+
             const handleTouchStart = (e) => {
                 setTouchStart(e.touches[0].clientY);
                 haptic();
             };
-            
+
             const handleTouchEnd = (e) => {
-                const touchEnd = e.changedTouches[0].clientY;
-                const diff = touchStart - touchEnd;
-                
-                if (diff > 50) {
-                    haptic();
-                    onSwipeUp();
-                }
+                const diff = touchStart - e.changedTouches[0].clientY;
+                if (diff > 50) { haptic(); onSwipeUp(); }
             };
-            
+
+            // Desktop: click-and-drag upward
+            const handleMouseDown = (e) => { mouseStartY.current = e.clientY; };
+            const handleMouseUp   = (e) => {
+                if (mouseStartY.current - e.clientY > 50) { haptic(); onSwipeUp(); }
+            };
+
+            // Desktop: scroll wheel upward
+            const handleWheel = (e) => {
+                if (e.deltaY < -30) { haptic(); onSwipeUp(); }
+            };
+
             return (
-                <div 
+                <div
                     className={`screen home-screen ${!isVisible ? 'fading-out' : ''}`}
                     onTouchStart={handleTouchStart}
                     onTouchEnd={handleTouchEnd}
+                    onMouseDown={handleMouseDown}
+                    onMouseUp={handleMouseUp}
+                    onWheel={handleWheel}
                     style={{ pointerEvents: isVisible ? 'all' : 'none' }}
                 >
                     <LoopsySleeping />
@@ -800,7 +878,18 @@
             </svg>
         );
         
-        // Single activity tile — uses PNG icon assets
+        // Inline SVG icon for the Drag sorting game tile
+        const DragTileIcon = () => (
+            <svg width="30" height="30" viewBox="0 0 30 30" fill="none" aria-hidden="true">
+                <circle cx="8" cy="15" r="5" fill="rgba(155,130,200,0.65)" />
+                <path d="M15 15h5" stroke="rgba(58,58,58,0.42)" strokeWidth="1.7" strokeLinecap="round"/>
+                <path d="M18 12l3.5 3-3.5 3" stroke="rgba(58,58,58,0.42)" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
+                <rect x="23" y="8" width="5.5" height="14" rx="2.5" stroke="rgba(58,58,58,0.38)" strokeWidth="1.4" fill="none"/>
+                <rect x="24.3" y="16" width="2.9" height="5" rx="1.2" fill="rgba(155,130,200,0.5)"/>
+            </svg>
+        );
+
+        // Single activity tile — supports PNG icon (icon prop) or inline element (iconEl prop)
         function ActivityTile({ activity, onSelect }) {
             const handleClick = () => {
                 haptic();
@@ -815,12 +904,11 @@
                     aria-label={activity.label}
                 >
                     <div className="tile-icon-wrap">
-                        <img
-                            src={`assets/icons/${activity.icon}`}
-                            alt=""
-                            aria-hidden="true"
-                            className="tile-icon-img"
-                        />
+                        {activity.icon ? (
+                            <img src={`assets/icons/${activity.icon}`} alt="" aria-hidden="true" className="tile-icon-img" />
+                        ) : (
+                            activity.iconEl || null
+                        )}
                     </div>
                     <span className="tile-label">{activity.label}</span>
                     <svg className="tile-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
@@ -832,7 +920,6 @@
 
         // Activities Dashboard — Soft Tile Stack
         function ActivitiesScreen({ onSelectActivity, onHome, isVisible, loopsyState, onLoopsyClick }) {
-            // icon: filename under assets/icons/
             const activities = [
                 { id: 'draw',   icon: 'draw.png',    label: 'Draw',    tint: '#EDE7F6' },
                 { id: 'breath', icon: 'breathe.png',  label: 'Breathe', tint: '#E3EFF7' },
@@ -840,6 +927,7 @@
                 { id: 'shift',  icon: 'shift.png',   label: 'Shift',   tint: '#FEF3E2' },
                 { id: 'tap',    icon: 'tap.png',     label: 'Tap',     tint: '#F3E8E6' },
                 { id: 'flow',   icon: 'flow.png',    label: 'Flow',    tint: '#EEE8F7' },
+                { id: 'drag',   iconEl: <DragTileIcon />, label: 'Drag', tint: '#EDE7F6' },
             ];
 
             const handleHomeClick = () => {
@@ -986,10 +1074,11 @@
             );
         }
         
-        // Activity: Breath — count, ripples, warm soft circle
+        // Activity: Breath — count, ripples, warm soft circle, breathe in/out label
         function BreathActivity({ onHome }) {
             const [scale, setScale] = useState(1);
             const [count, setCount] = useState(1);
+            const [phaseLabel, setPhaseLabel] = useState('breathe in');
             const [ripples, setRipples] = useState([]);
             const rippleId = useRef(0);
             const isInRef = useRef(true);
@@ -1010,9 +1099,10 @@
                         ? Math.min(4, Math.floor(t * 4) + 1)
                         : Math.max(1, 4 - Math.floor(t * 4)));
 
-                    // Spawn a ripple on each phase transition
+                    // Spawn a ripple + update label on phase transition
                     if (isIn !== isInRef.current) {
                         isInRef.current = isIn;
+                        setPhaseLabel(isIn ? 'breathe in' : 'breathe out');
                         setRipples(prev => {
                             const id = rippleId.current++;
                             return [...prev.slice(-3), { id }];
@@ -1064,74 +1154,152 @@
                     }} aria-hidden="true" />
 
                     {/* Countdown / count-up number */}
-                    <div className="breath-count" aria-live="polite" aria-label={`${count}`}>{count}</div>
+                    <div className="breath-count" aria-hidden="true">{count}</div>
+
+                    {/* Phase label — breathe in / breathe out */}
+                    <div className="breath-label" aria-live="polite">{phaseLabel}</div>
                 </div>
             );
         }
         
-        // Activity: Float
+        // Activity: Float — canvas RAF, smooth animation, pop confetti
         function FloatActivity({ onHome }) {
-            const [bubbles, setBubbles] = useState([]);
-            const nextId = useRef(0);
-            
-            const pastelColors = [
-                'radial-gradient(circle at 30% 30%, rgba(255, 200, 220, 0.4), rgba(255, 180, 210, 0.2))',
-                'radial-gradient(circle at 30% 30%, rgba(200, 220, 255, 0.4), rgba(180, 210, 255, 0.2))',
-                'radial-gradient(circle at 30% 30%, rgba(220, 255, 200, 0.4), rgba(210, 255, 180, 0.2))',
-                'radial-gradient(circle at 30% 30%, rgba(255, 240, 200, 0.4), rgba(255, 230, 180, 0.2))',
-                'radial-gradient(circle at 30% 30%, rgba(240, 200, 255, 0.4), rgba(230, 180, 255, 0.2))',
-                'radial-gradient(circle at 30% 30%, rgba(200, 255, 240, 0.4), rgba(180, 255, 230, 0.2))'
+            const canvasRef  = useRef(null);
+            const bubblesRef = useRef([]);    // mutable array, never triggers re-render
+            const rafRef     = useRef(null);
+            const lastSpawnRef = useRef(0);
+            const [pops, setPops] = useState([]); // DOM pop-burst overlays
+
+            // Pastel colour pairs [inner highlight, outer tint]
+            const FLOAT_COLORS = [
+                { inner: 'rgba(255,210,228,0.78)', outer: 'rgba(255,185,215,0.5)'  }, // pink
+                { inner: 'rgba(205,225,255,0.78)', outer: 'rgba(185,210,255,0.5)'  }, // blue
+                { inner: 'rgba(208,255,218,0.78)', outer: 'rgba(185,255,200,0.5)'  }, // green
+                { inner: 'rgba(255,246,205,0.78)', outer: 'rgba(255,238,182,0.5)'  }, // yellow
+                { inner: 'rgba(238,212,255,0.78)', outer: 'rgba(222,190,255,0.5)'  }, // lavender
             ];
-            
+
+            const spawnBubble = (W, H, scattered) => {
+                const r = 24 + Math.random() * 32; // radius 24–56 px
+                bubblesRef.current.push({
+                    x: r + Math.random() * (W - 2 * r),
+                    y: scattered ? r + Math.random() * (H - 2 * r) : H + r,
+                    r,
+                    vy: -(0.55 + Math.random() * 0.85), // upward
+                    vx: (Math.random() - 0.5) * 0.32,
+                    colorIdx: Math.floor(Math.random() * FLOAT_COLORS.length),
+                });
+            };
+
+            const drawBubble = (ctx, b, colors) => {
+                const c = colors[b.colorIdx];
+                // Gradient: bright highlight near top-left, fading outward
+                const grad = ctx.createRadialGradient(
+                    b.x - b.r * 0.32, b.y - b.r * 0.32, 1,
+                    b.x, b.y, b.r
+                );
+                grad.addColorStop(0,    c.inner);
+                grad.addColorStop(0.65, c.outer);
+                grad.addColorStop(1,    'rgba(255,255,255,0.04)');
+
+                ctx.beginPath();
+                ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+                ctx.fillStyle = grad;
+                ctx.fill();
+
+                // Small specular highlight
+                ctx.beginPath();
+                ctx.arc(b.x - b.r * 0.28, b.y - b.r * 0.3, b.r * 0.2, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(255,255,255,0.42)';
+                ctx.fill();
+
+                // Subtle rim
+                ctx.beginPath();
+                ctx.arc(b.x, b.y, b.r - 1, 0, Math.PI * 2);
+                ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+            };
+
             useEffect(() => {
-                const createBubble = () => {
-                    const size = 40 + Math.random() * 60;
-                    const newBubble = {
-                        id: nextId.current++,
-                        x: Math.random() * (window.innerWidth - size),
-                        y: window.innerHeight + size,
-                        size: size,
-                        speed: 1.2 + Math.random() * 1.5,
-                        drift: (Math.random() - 0.5) * 0.5,
-                        color: pastelColors[Math.floor(Math.random() * pastelColors.length)]
-                    };
-                    setBubbles(prev => [...prev, newBubble]);
+                const canvas = canvasRef.current;
+                const ctx = canvas.getContext('2d');
+                const W = canvas.width  = window.innerWidth;
+                const H = canvas.height = window.innerHeight;
+
+                // Seed with bubbles already scattered across the screen
+                for (let i = 0; i < 11; i++) spawnBubble(W, H, true);
+                lastSpawnRef.current = Date.now();
+
+                const animate = () => {
+                    ctx.clearRect(0, 0, W, H);
+
+                    const now = Date.now();
+                    // Spawn a new bubble from the bottom every ~1.8 s
+                    if (now - lastSpawnRef.current > 1800) {
+                        lastSpawnRef.current = now;
+                        spawnBubble(W, H, false);
+                    }
+
+                    // Move & cull
+                    bubblesRef.current = bubblesRef.current.filter(b => {
+                        b.y += b.vy;
+                        b.x += b.vx;
+                        // Gentle horizontal bounce off walls
+                        if (b.x < b.r)     { b.x = b.r;     b.vx = Math.abs(b.vx); }
+                        if (b.x > W - b.r) { b.x = W - b.r; b.vx = -Math.abs(b.vx); }
+                        return b.y > -b.r; // remove when fully off-screen top
+                    });
+
+                    for (const b of bubblesRef.current) drawBubble(ctx, b, FLOAT_COLORS);
+
+                    rafRef.current = requestAnimationFrame(animate);
                 };
-                
-                for (let i = 0; i < 10; i++) {
-                    setTimeout(createBubble, i * 400);
-                }
-                
-                const bubbleInterval = setInterval(createBubble, 1200);
-                
-                const moveInterval = setInterval(() => {
-                    setBubbles(prev => 
-                        prev
-                            .map(bubble => ({
-                                ...bubble,
-                                y: bubble.y - bubble.speed,
-                                x: bubble.x + bubble.drift
-                            }))
-                            .filter(bubble => bubble.y > -bubble.size)
-                    );
-                }, 16);
-                
-                return () => {
-                    clearInterval(bubbleInterval);
-                    clearInterval(moveInterval);
-                };
+
+                animate();
+                return () => cancelAnimationFrame(rafRef.current);
             }, []);
-            
-            const popBubble = (id) => {
-                haptic();
-                setBubbles(prev => prev.filter(b => b.id !== id));
+
+            // Touch / click: detect bubble hit → pop
+            const handleTap = (e) => {
+                if (e.target.closest('.icon-button')) return;
+                e.preventDefault();
+                const canvas = canvasRef.current;
+                const rect   = canvas.getBoundingClientRect();
+                const cx = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+                const cy = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+
+                for (let i = bubblesRef.current.length - 1; i >= 0; i--) {
+                    const b = bubblesRef.current[i];
+                    const dx = cx - b.x, dy = cy - b.y;
+                    if (dx * dx + dy * dy < b.r * b.r) {
+                        haptic();
+                        const px = b.x, py = b.y;
+                        bubblesRef.current.splice(i, 1);
+
+                        // Create pop particles
+                        const POP_COLS = ['#F4C4D8','#D8C4F4','#C4F4D8','#F4E8C2','#C4D8F4'];
+                        const particles = Array.from({ length: 8 }, (_, pi) => {
+                            const angle = (pi / 8) * Math.PI * 2 + Math.random() * 0.45;
+                            const dist  = 24 + Math.random() * 28;
+                            return {
+                                id: pi,
+                                dx: Math.cos(angle) * dist,
+                                dy: Math.sin(angle) * dist,
+                                size: 4 + Math.random() * 5,
+                                color: POP_COLS[Math.floor(Math.random() * POP_COLS.length)],
+                            };
+                        });
+                        const popId = Date.now() + Math.random();
+                        setPops(prev => [...prev, { id: popId, x: px, y: py, particles }]);
+                        setTimeout(() => setPops(prev => prev.filter(p => p.id !== popId)), 650);
+                        break;
+                    }
+                }
             };
-            
-            const handleHomeClick = () => {
-                haptic();
-                onHome();
-            };
-            
+
+            const handleHomeClick = () => { haptic(); onHome(); };
+
             return (
                 <div className="screen" style={{ background: '#E8F5E9', overflow: 'hidden' }}>
                     <button className="icon-button home-button" onClick={handleHomeClick} aria-label="Go back">
@@ -1140,20 +1308,36 @@
                             <polyline points="9 22 9 12 15 12 15 22"/>
                         </svg>
                     </button>
-                    {bubbles.map(bubble => (
-                        <div
-                            key={bubble.id}
-                            className="bubble"
-                            onClick={() => popBubble(bubble.id)}
-                            style={{
-                                left: `${bubble.x}px`,
-                                top: `${bubble.y}px`,
-                                width: `${bubble.size}px`,
-                                height: `${bubble.size}px`,
-                                background: bubble.color
-                            }}
-                        />
-                    ))}
+
+                    <canvas
+                        ref={canvasRef}
+                        onTouchStart={handleTap}
+                        onMouseDown={handleTap}
+                        style={{ display: 'block', touchAction: 'none' }}
+                    />
+
+                    {/* Pop burst particles */}
+                    {pops.map(pop =>
+                        pop.particles.map(p => (
+                            <div
+                                key={`${pop.id}-${p.id}`}
+                                aria-hidden="true"
+                                style={{
+                                    position: 'absolute',
+                                    left: pop.x,
+                                    top:  pop.y,
+                                    width: p.size,
+                                    height: p.size,
+                                    borderRadius: '50%',
+                                    background: p.color,
+                                    '--tx': `${p.dx}px`,
+                                    '--ty': `${p.dy}px`,
+                                    animation: 'popParticle 0.55s ease-out forwards',
+                                    pointerEvents: 'none',
+                                }}
+                            />
+                        ))
+                    )}
                 </div>
             );
         }
@@ -1275,7 +1459,7 @@
             const GRAVITY = 0.18;   // gentle downward pull
             const FLOOR_DAMP = 0.12; // energy kept on floor bounce (soft stop)
             const WALL_DAMP  = 0.4;
-            const MAX_DOTS   = 65;
+            // No dot cap — fill the screen! Collision skips at high density for performance.
 
             useEffect(() => {
                 const canvas = canvasRef.current;
@@ -1284,11 +1468,9 @@
                 canvas.height = window.innerHeight;
 
                 // ── Two-pass collision resolution ──────────────────────────
-                // Each pass pushes overlapping pairs apart and exchanges a
-                // fraction of their relative velocity. Two passes per frame
-                // lets stacked dots settle without a heavy physics engine.
                 function resolveCollisions() {
                     const dots = dotsRef.current;
+                    if (dots.length > 120) return; // skip O(n²) at high density
                     for (let pass = 0; pass < 2; pass++) {
                         for (let i = 0; i < dots.length; i++) {
                             for (let j = i + 1; j < dots.length; j++) {
@@ -1366,7 +1548,6 @@
             }, []);
 
             const spawnDot = (clientX, clientY) => {
-                if (dotsRef.current.length >= MAX_DOTS) return;
                 const canvas = canvasRef.current;
                 const rect = canvas.getBoundingClientRect();
                 const r = 16 + Math.random() * 13; // radius 16–29px
@@ -1630,11 +1811,12 @@
             );
         }
 
-        function CharacterScreen({ loopsyState, onClose }) {
+        function CharacterScreen({ loopsyState, onClose, onReset }) {
             const [visible, setVisible] = useState(false);
             const [phrase] = useState(
                 () => LOOPSY_PHRASES[Math.floor(Math.random() * LOOPSY_PHRASES.length)]
             );
+            const isMax = loopsyState.stage >= 4;
 
             useEffect(() => { requestAnimationFrame(() => setVisible(true)); }, []);
 
@@ -1644,9 +1826,15 @@
                 setTimeout(onClose, 400);
             };
 
+            const handleReset = () => {
+                haptic();
+                setVisible(false);
+                setTimeout(() => { onReset(); onClose(); }, 400);
+            };
+
             return (
                 <div className={`character-screen-overlay ${visible ? 'visible' : ''}`}>
-                    <button className="character-close-btn" onClick={handleClose}>
+                    <button className="character-close-btn" onClick={handleClose} aria-label="Close">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <line x1="18" y1="6" x2="6" y2="18"/>
                             <line x1="6" y1="6" x2="18" y2="18"/>
@@ -1657,12 +1845,23 @@
                     <div className="character-float">
                         <LoopsyCharacterImg stage={loopsyState.stage} size={160} float={false} />
                     </div>
+                    {/* Reset button only visible at max stage */}
+                    {isMax && (
+                        <button className="reset-btn" onClick={handleReset} aria-label="Start Loopsy again from the beginning">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true">
+                                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                                <path d="M3 3v5h5"/>
+                            </svg>
+                            reset
+                        </button>
+                    )}
                 </div>
             );
         }
 
         function ExitOverlay({ loopsyState, pendingState, onComplete }) {
-            const [visible, setVisible] = useState(false);
+            // Start fully visible — no fade-in so we never see the game through a transparent overlay
+            const [visible, setVisible] = useState(true);
             const [fillWidth, setFillWidth] = useState(progressFromCount(loopsyState.activityCount) * 100);
             const [showNext, setShowNext] = useState(false);
             const stageChanged = pendingState.stage > loopsyState.stage;
@@ -1687,17 +1886,15 @@
             });
 
             useEffect(() => {
-                requestAnimationFrame(() => setVisible(true));
-
                 const t1 = !isMax ? setTimeout(() => {
                     setFillWidth(progressFromCount(pendingState.activityCount) * 100);
-                }, 350) : null;
+                }, 300) : null;
 
-                const t2 = stageChanged ? setTimeout(() => setShowNext(true), 1000) : null;
+                const t2 = stageChanged ? setTimeout(() => setShowNext(true), 900) : null;
 
-                const totalDuration = stageChanged ? 2600 : 1700;
+                const totalDuration = stageChanged ? 2600 : 1600;
                 const t3 = setTimeout(() => {
-                    setVisible(false);
+                    setVisible(false);          // smooth fade-out only
                     setTimeout(onComplete, 420);
                 }, totalDuration);
 
@@ -1708,7 +1905,7 @@
 
             return (
                 <div className={`exit-overlay ${visible ? 'visible' : ''}`}>
-                    {/* Soft confetti falls behind everything else */}
+                    {/* Soft confetti */}
                     {confettiPieces.map(p => (
                         <div
                             key={p.id}
@@ -1727,18 +1924,256 @@
                             }}
                         />
                     ))}
+
+                    {/* At max stage: speech bubble above character, same as avatar screen */}
+                    {isMax && (
+                        <div className="speech-bubble">{affirmation}</div>
+                    )}
+
                     <div className="loopsy-morph-wrap" style={{
                         transform: showNext ? 'scale(1.1)' : 'scale(1)',
                         opacity: 1
                     }}>
                         <LoopsyCharacterImg stage={displayStage} size={140} float={false} />
                     </div>
-                    {isMax ? (
-                        <div className="exit-affirmation">{affirmation}</div>
-                    ) : (
+
+                    {!isMax && (
                         <div className="exit-progress-track">
                             <div className="exit-progress-fill" style={{ width: `${fillWidth}%` }} />
                         </div>
+                    )}
+                </div>
+            );
+        }
+
+        // Activity: Drag — colour-sorting game with bucket + 3 test tubes
+        function DragActivity({ onHome }) {
+            const BALL_R = 14; // px radius
+
+            // Layout constants (% of screen unless labelled px)
+            const BKT = { l: 3, t: 13, w: 44, h: 73 }; // bucket bounds
+            const TUBE_DEFS = [
+                { cx: 58, color: 'purple' },
+                { cx: 73, color: 'green'  },
+                { cx: 88, color: 'blue'   },
+            ];
+            const TUBE_TOP = 10;  // % from top
+            const TUBE_BOT = 85;  // % from top
+            const TUBE_W   = 46;  // px
+
+            const COLORS = {
+                purple: { fill: '#C8A0E0', dark: '#9868B8', pale: 'rgba(200,160,224,0.88)' },
+                green:  { fill: '#8ECCA8', dark: '#55956E', pale: 'rgba(142,204,168,0.88)' },
+                blue:   { fill: '#8ABCDC', dark: '#4C8AAC', pale: 'rgba(138,188,220,0.88)' },
+            };
+
+            // Balls stored with bx/by as position inside bucket (0–100%)
+            const [balls, setBalls] = useState(() => {
+                const cols = ['purple', 'green', 'blue'];
+                return cols.flatMap((color, ci) =>
+                    Array.from({ length: 10 }, (_, i) => ({
+                        id: `${color}-${i}`,
+                        color,
+                        bx: 8  + ((ci * 18 + i * 14) % 78),
+                        by: 10 + ((ci * 23 + i * 17) % 76),
+                        placed: false,
+                    }))
+                );
+            });
+
+            const [tubes, setTubes] = useState([
+                { color: 'purple', balls: [] },
+                { color: 'green',  balls: [] },
+                { color: 'blue',   balls: [] },
+            ]);
+
+            const [drag, setDrag] = useState(null); // { id, clientX, clientY }
+            const dragRef      = useRef(null);
+            const containerRef = useRef(null);
+            const rectRef      = useRef(null);
+
+            const handlePointerDown = (e) => {
+                if (e.target.closest('.icon-button')) return;
+                e.preventDefault();
+
+                const rect = containerRef.current.getBoundingClientRect();
+                rectRef.current = rect;
+                const sx = e.clientX - rect.left;
+                const sy = e.clientY - rect.top;
+
+                // Convert to bucket pixel space
+                const bL = rect.width  * BKT.l / 100;
+                const bT = rect.height * BKT.t / 100;
+                const bW = rect.width  * BKT.w / 100;
+                const bH = rect.height * BKT.h / 100;
+
+                // Find topmost unplaced ball hit
+                const unplaced = balls.filter(b => !b.placed && b.id !== drag?.id);
+                for (let i = unplaced.length - 1; i >= 0; i--) {
+                    const b = unplaced[i];
+                    const bx = bL + b.bx / 100 * bW;
+                    const by = bT + b.by / 100 * bH;
+                    const dx = sx - bx, dy = sy - by;
+                    if (dx * dx + dy * dy < (BALL_R + 8) * (BALL_R + 8)) {
+                        haptic();
+                        const info = { id: b.id, clientX: e.clientX, clientY: e.clientY };
+                        dragRef.current = info;
+                        setDrag(info);
+                        break;
+                    }
+                }
+            };
+
+            const handlePointerMove = (e) => {
+                if (!dragRef.current) return;
+                e.preventDefault();
+                const updated = { ...dragRef.current, clientX: e.clientX, clientY: e.clientY };
+                dragRef.current = updated;
+                setDrag(updated);
+            };
+
+            const handlePointerUp = (e) => {
+                if (!dragRef.current) return;
+                const { id } = dragRef.current;
+                dragRef.current = null;
+
+                const rect = rectRef.current || containerRef.current.getBoundingClientRect();
+                const sx = e.clientX - rect.left;
+                const sy = e.clientY - rect.top;
+                const draggedBall = balls.find(b => b.id === id);
+
+                if (draggedBall) {
+                    for (let ti = 0; ti < TUBE_DEFS.length; ti++) {
+                        const tubeCx  = rect.width  * TUBE_DEFS[ti].cx / 100;
+                        const tubeTop = rect.height * TUBE_TOP / 100;
+                        const tubeBot = rect.height * TUBE_BOT / 100;
+                        const hitX = Math.abs(sx - tubeCx) < TUBE_W / 2 + 14;
+                        const hitY = sy >= tubeTop - 24 && sy <= tubeBot + 24;
+
+                        if (hitX && hitY && draggedBall.color === TUBE_DEFS[ti].color) {
+                            haptic();
+                            setBalls(prev => prev.map(b => b.id === id ? { ...b, placed: true } : b));
+                            setTubes(prev => {
+                                const t = [...prev];
+                                t[ti] = { ...t[ti], balls: [...t[ti].balls, draggedBall] };
+                                return t;
+                            });
+                            break;
+                        }
+                    }
+                }
+                setDrag(null);
+            };
+
+            const dragBall    = drag ? balls.find(b => b.id === drag.id) : null;
+            const totalPlaced = tubes.reduce((s, t) => s + t.balls.length, 0);
+            const isComplete  = totalPlaced === 30;
+
+            const handleHomeClick = () => { haptic(); onHome(); };
+
+            return (
+                <div
+                    ref={containerRef}
+                    className="screen"
+                    style={{ background: '#F6F3EE', overflow: 'hidden', touchAction: 'none' }}
+                    onPointerDown={handlePointerDown}
+                    onPointerMove={handlePointerMove}
+                    onPointerUp={handlePointerUp}
+                    onPointerCancel={handlePointerUp}
+                >
+                    <button className="icon-button home-button" onClick={handleHomeClick} aria-label="Go back">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                            <polyline points="9 22 9 12 15 12 15 22"/>
+                        </svg>
+                    </button>
+
+                    {/* Bucket */}
+                    <div style={{
+                        position: 'absolute',
+                        left: `${BKT.l}%`, top: `${BKT.t}%`,
+                        width: `${BKT.w}%`, height: `${BKT.h}%`,
+                        background: 'rgba(255, 255, 255, 0.34)',
+                        border: '2px solid rgba(175, 168, 200, 0.35)',
+                        borderRadius: '18px',
+                        backdropFilter: 'blur(8px)',
+                        WebkitBackdropFilter: 'blur(8px)',
+                    }}>
+                        {balls.filter(b => !b.placed && b.id !== drag?.id).map(b => (
+                            <div key={b.id} style={{
+                                position: 'absolute',
+                                left: `${b.bx}%`, top: `${b.by}%`,
+                                width:  BALL_R * 2, height: BALL_R * 2,
+                                borderRadius: '50%',
+                                background: `radial-gradient(circle at 36% 30%, rgba(255,255,255,0.58), ${COLORS[b.color].pale} 52%, ${COLORS[b.color].dark} 100%)`,
+                                transform: 'translate(-50%, -50%)',
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.13)',
+                                pointerEvents: 'none',
+                            }} />
+                        ))}
+                    </div>
+
+                    {/* Test tubes */}
+                    {TUBE_DEFS.map((td, ti) => (
+                        <div key={ti} style={{
+                            position: 'absolute',
+                            left: `calc(${td.cx}% - ${TUBE_W / 2}px)`,
+                            top:  `${TUBE_TOP}%`,
+                            width:  TUBE_W,
+                            height: `${TUBE_BOT - TUBE_TOP}%`,
+                            background: 'rgba(255, 255, 255, 0.14)',
+                            border: '2.5px solid rgba(175, 168, 210, 0.42)',
+                            borderTop: 'none',
+                            borderRadius: `0 0 ${TUBE_W / 2}px ${TUBE_W / 2}px`,
+                            backdropFilter: 'blur(4px)',
+                            WebkitBackdropFilter: 'blur(4px)',
+                            overflow: 'hidden',
+                        }}>
+                            {/* Colour indicator dot above tube opening */}
+                            <div style={{
+                                position: 'absolute',
+                                top: -20, left: '50%',
+                                transform: 'translateX(-50%)',
+                                width: 13, height: 13,
+                                borderRadius: '50%',
+                                background: COLORS[td.color].fill,
+                                boxShadow: `0 0 8px ${COLORS[td.color].fill}`,
+                            }} aria-hidden="true" />
+                            {/* Balls stacked from the bottom */}
+                            {tubes[ti].balls.map((ball, idx) => (
+                                <div key={ball.id} style={{
+                                    position: 'absolute',
+                                    bottom: 4 + idx * (BALL_R * 2 + 2),
+                                    left: '50%',
+                                    transform: 'translateX(-50%)',
+                                    width:  BALL_R * 2, height: BALL_R * 2,
+                                    borderRadius: '50%',
+                                    background: `radial-gradient(circle at 36% 30%, rgba(255,255,255,0.52), ${COLORS[ball.color].pale} 52%, ${COLORS[ball.color].dark})`,
+                                    boxShadow: '0 1px 5px rgba(0,0,0,0.1)',
+                                }} />
+                            ))}
+                        </div>
+                    ))}
+
+                    {/* Ball following the pointer while dragging */}
+                    {dragBall && drag && (
+                        <div style={{
+                            position: 'fixed',
+                            left: drag.clientX,
+                            top:  drag.clientY,
+                            width:  BALL_R * 2, height: BALL_R * 2,
+                            borderRadius: '50%',
+                            background: `radial-gradient(circle at 36% 30%, rgba(255,255,255,0.62), ${COLORS[dragBall.color].pale} 48%, ${COLORS[dragBall.color].dark})`,
+                            transform: 'translate(-50%, -50%) scale(1.18)',
+                            boxShadow: '0 6px 18px rgba(0,0,0,0.2)',
+                            pointerEvents: 'none',
+                            zIndex: 500,
+                        }} />
+                    )}
+
+                    {/* Gentle completion notice */}
+                    {isComplete && (
+                        <div className="drag-complete-badge">all sorted</div>
                     )}
                 </div>
             );
@@ -1768,6 +2203,9 @@
                     const newCount = loopsyState.activityCount + 1;
                     const newStage = stageFromCount(newCount);
                     setPendingLoopsyState({ stage: newStage, activityCount: newCount });
+                    // Switch away from the activity FIRST so the overlay covers the
+                    // activities screen (not the game) — eliminates the flash.
+                    setCurrentActivity(null);
                     setShowExitOverlay(true);
                 } else if (currentScreen === 'activities') {
                     setShowActivities(false);
@@ -1780,18 +2218,23 @@
 
             const handleExitComplete = () => {
                 setLoopsyState(pendingLoopsyState);
-                setCurrentActivity(null);
+                // currentActivity already null (set in handleHome)
                 setShowExitOverlay(false);
                 setPendingLoopsyState(null);
             };
 
+            const handleReset = () => {
+                setLoopsyState({ stage: 0, activityCount: 0 });
+            };
+
             const activities = {
-                draw: <DrawActivity onHome={handleHome} />,
+                draw:   <DrawActivity  onHome={handleHome} />,
                 breath: <BreathActivity onHome={handleHome} />,
-                float: <FloatActivity onHome={handleHome} />,
-                shift: <ShiftActivity onHome={handleHome} />,
-                tap: <TapActivity onHome={handleHome} />,
-                flow: <FlowActivity onHome={handleHome} />
+                float:  <FloatActivity  onHome={handleHome} />,
+                shift:  <ShiftActivity  onHome={handleHome} />,
+                tap:    <TapActivity    onHome={handleHome} />,
+                flow:   <FlowActivity   onHome={handleHome} />,
+                drag:   <DragActivity   onHome={handleHome} />,
             };
 
             return (
@@ -1807,6 +2250,7 @@
                         <CharacterScreen
                             loopsyState={loopsyState}
                             onClose={() => setShowCharacterScreen(false)}
+                            onReset={handleReset}
                         />
                     )}
                     {currentActivity ? (
