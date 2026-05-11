@@ -2344,8 +2344,9 @@
         function DragActivity({ onHome }) {
             const BALL_R     = 14;  // px radius
             const TUBE_W     = BALL_R * 2; // tube width exactly matches ball diameter
-            const TUBE_TOP   = 39;  // % — bucket occupies 39%–61% (half the previous height)
-            const TUBE_BOT   = 61;  // %
+            const TUBE_TOP   = 39;  // % — bucket top (bucket is 39%–61%)
+            const TUBE_BOT   = 61;  // % — bucket bottom (unchanged)
+            const TUBE_VIS_BOT = 83; // % — tubes are taller than bucket: 39%–83% = 44% height, fits all 10 balls
             const GRAVITY    = 0.22;
             const FLOOR_DAMP = 0.08;
             const WALL_DAMP  = 0.35;
@@ -2572,7 +2573,7 @@
                 for (let ti = 0; ti < TUBE_DEFS.length; ti++) {
                     const tubeCx  = rect.width  * TUBE_DEFS[ti].cx / 100;
                     const tubeTop = rect.height * TUBE_TOP / 100;
-                    const tubeBot = rect.height * TUBE_BOT / 100;
+                    const tubeBot = rect.height * TUBE_VIS_BOT / 100;
                     const hitX = Math.abs(sx - tubeCx) < TUBE_W / 2 + 18;
                     const hitY = sy >= tubeTop - 30 && sy <= tubeBot + 30;
 
@@ -2585,7 +2586,7 @@
                         // Mini confetti burst at tube centre
                         const bPal = ['#F4C4D8','#D8C4F4','#C4F4D8','#F4DCC4','#C4D8F4'];
                         const bx = (TUBE_DEFS[ti].cx); // already in %
-                        const by = (TUBE_TOP + (TUBE_BOT - TUBE_TOP) / 2);
+                        const by = (TUBE_TOP + (TUBE_VIS_BOT - TUBE_TOP) / 2);
                         const burst = {
                             id: Date.now() + Math.random(),
                             x: bx, y: by,
@@ -2672,7 +2673,7 @@
                             left: `calc(${td.cx}% - ${TUBE_W / 2}px)`,
                             top:  `${TUBE_TOP}%`,
                             width:  TUBE_W,
-                            height: `${TUBE_BOT - TUBE_TOP}%`,
+                            height: `${TUBE_VIS_BOT - TUBE_TOP}%`,
                             background: 'rgba(255,255,255,0.10)',
                             border: `2px solid ${COLORS[td.color].tube}`,
                             borderTop: 'none',
