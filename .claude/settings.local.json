@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git push *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(ping -n 4 127.0.0.1)",
+      "WebFetch(domain:loopsy-eight.vercel.app)",
+      "Bash(git mv *)",
+      "Bash(git commit -m 'Rename loopsy-v2.html to index.html for Vercel root serving *)",
+      "Bash(git commit -m 'Add Loopsy-background.png asset for dashboard banner *)",
+      "Bash(git commit -m 'Add /info page — story, PDA explainer, design, looking forward *)",
+      "Bash(git commit -m 'Add vercel.json with cleanUrls for /info routing *)",
+      "Bash(git commit -m 'Fix hero strapline and footer text centring \\(add margin auto\\) *)",
+      "Bash(git commit -m 'Add line break after Josh in footer *)"
+    ]
+  }
+}
