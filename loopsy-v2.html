@@ -188,7 +188,7 @@
         
         .activities-screen {
             background: linear-gradient(180deg, #F6F3EE 0%, #EDE8E0 100%);
-            padding: calc(80px + env(safe-area-inset-top)) 25px calc(30px + env(safe-area-inset-bottom));
+            padding: calc(100px + env(safe-area-inset-top)) 25px calc(30px + env(safe-area-inset-bottom));
             overflow-y: auto;
             position: absolute;
             top: 0;
@@ -845,6 +845,60 @@
             background: rgba(255, 255, 255, 0.1);
         }
 
+        /* ── Dashboard welcome banner ── */
+        .dashboard-banner {
+            width: 100%;
+            max-width: 480px;
+            height: 112px;
+            border-radius: 18px;
+            overflow: hidden;
+            position: relative;
+            margin: 0 auto 12px;
+            flex-shrink: 0;
+        }
+
+        .dashboard-banner-bg {
+            position: absolute;
+            inset: 0;
+            background-image: url('assets/Loopsy-background.png');
+            background-size: cover;
+            /* push image down so Loopsy's face is visible in the frame */
+            background-position: center 72%;
+        }
+
+        /* gradient overlay — stronger on the left so left-aligned text is always readable */
+        .dashboard-banner-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(105deg,
+                rgba(70, 55, 100, 0.72) 0%,
+                rgba(60, 48, 88, 0.62) 55%,
+                rgba(40, 30, 65, 0.28) 100%);
+        }
+
+        .dashboard-banner-text {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            /* left-align with padding; right padding keeps text away from Loopsy's face */
+            padding: 0 130px 0 20px;
+            text-align: left;
+            font-size: 19px;
+            font-weight: 400;
+            color: rgba(255, 255, 255, 0.93);
+            letter-spacing: 2px;
+            line-height: 1.45;
+            transition: opacity 0.55s ease;
+        }
+
+        /* dark mode: slightly deeper overlay so text still reads cleanly */
+        #app.dark-mode .dashboard-banner-overlay {
+            background: linear-gradient(135deg,
+                rgba(28, 22, 42, 0.68) 0%,
+                rgba(20, 16, 34, 0.58) 100%);
+        }
+
         /* ── Sensory safety: respect OS reduced-motion preference ── */
         @media (prefers-reduced-motion: reduce) {
             .loopsy-float,
@@ -1019,6 +1073,55 @@
             </svg>
         );
 
+        // Dashboard welcome banner — cycles PDA-friendly affirmations; first is always the greeting
+        function DashboardBanner() {
+            const MESSAGES = [
+                "Hey, what shall we play?",       // always shown first on app open
+                "You're in charge here",
+                "Take your time, no rush",
+                "You choose what happens next",
+                "There's no right or wrong today",
+                "This is your space",
+                "Go at your own pace",
+                "You're safe here",
+                "It's okay to just be",
+                "Nothing has to happen today",
+                "You get to decide",
+                "Everything is okay right now",
+                "Stay as long as you like",
+                "This is a calm place",
+                "No pressure, just play",
+            ];
+
+            const [msgIdx, setMsgIdx] = useState(0);
+            const [visible, setVisible] = useState(true);
+
+            useEffect(() => {
+                const id = setInterval(() => {
+                    setVisible(false);
+                    setTimeout(() => {
+                        setMsgIdx(prev => (prev + 1) % MESSAGES.length);
+                        setVisible(true);
+                    }, 550);
+                }, 7000);
+                return () => clearInterval(id);
+            }, []);
+
+            return (
+                <div className="dashboard-banner" role="status" aria-live="polite">
+                    <div className="dashboard-banner-bg" aria-hidden="true" />
+                    <div className="dashboard-banner-overlay" aria-hidden="true" />
+                    <div
+                        className="dashboard-banner-text"
+                        style={{ opacity: visible ? 1 : 0 }}
+                        aria-label={MESSAGES[msgIdx]}
+                    >
+                        {MESSAGES[msgIdx]}
+                    </div>
+                </div>
+            );
+        }
+
         // Single activity tile — supports PNG icon (icon prop) or inline element (iconEl prop)
         function ActivityTile({ activity, onSelect }) {
             const handleClick = () => {
@@ -1100,6 +1203,7 @@
                             <polyline points="9 22 9 12 15 12 15 22"/>
                         </svg>
                     </button>
+                    <DashboardBanner />
                     <div className="activities-stack">
                         {activities.map(activity => (
                             <ActivityTile
@@ -1234,7 +1338,7 @@
         function BreathActivity({ onHome }) {
             const [scale, setScale] = useState(1);
             const [count, setCount] = useState(1);
-            const [phaseLabel, setPhaseLabel] = useState('breathe in');
+            const [phaseLabel, setPhaseLabel] = useState('Breathe in');
             const [ripples, setRipples] = useState([]);
             const rippleId = useRef(0);
             const phaseRef = useRef('in'); // 'in' | 'hold' | 'out'
@@ -1272,7 +1376,7 @@
                     setCount(Math.min(3, Math.floor(t * 3) + 1));
 
                     // Spawn ripple and update label on phase transition
-                    const label = phase === 'in' ? 'breathe in' : phase === 'hold' ? 'hold' : 'breathe out';
+                    const label = phase === 'in' ? 'Breathe in' : phase === 'hold' ? 'Hold' : 'Breathe out';
                     if (label !== phaseRef.current) {
                         phaseRef.current = label;
                         setPhaseLabel(label);
@@ -1359,7 +1463,7 @@
                     x: r + Math.random() * (W - 2 * r),
                     y: scattered ? r + Math.random() * (H - 2 * r) : H + r,
                     r,
-                    vy: -(0.8 + Math.random() * 1.2),  // faster upward
+                    vy: -(0.96 + Math.random() * 1.44), // +20% speed
                     vx: (Math.random() - 0.5) * 0.55,  // more horizontal variation
                     colorIdx: Math.floor(Math.random() * FLOAT_COLORS.length),
                 });
@@ -1401,16 +1505,16 @@
                 const W = canvas.width  = window.innerWidth;
                 const H = canvas.height = window.innerHeight;
 
-                // Seed with bubbles already scattered across the screen
-                for (let i = 0; i < 18; i++) spawnBubble(W, H, true);
+                // Seed with bubbles already scattered across the screen (+30% count: 18→23)
+                for (let i = 0; i < 23; i++) spawnBubble(W, H, true);
                 lastSpawnRef.current = Date.now();
 
                 const animate = () => {
                     ctx.clearRect(0, 0, W, H);
 
                     const now = Date.now();
-                    // Spawn a new bubble from the bottom every ~1.1 s
-                    if (now - lastSpawnRef.current > 1100) {
+                    // Spawn a new bubble every ~850 ms (+30% rate vs 1100 ms)
+                    if (now - lastSpawnRef.current > 850) {
                         lastSpawnRef.current = now;
                         spawnBubble(W, H, false);
                     }
@@ -1983,28 +2087,28 @@
 
         // Short affirmations shown at max stage (no gamified language)
         const AFFIRMATIONS = [
-            "nice one",
-            "well done",
-            "keep going",
-            "you're doing great",
-            "that was good",
-            "all good",
-            "feels right",
+            "Nice one",
+            "Well done",
+            "Keep going",
+            "You're doing great",
+            "That was good",
+            "All good",
+            "Feels right",
         ];
 
         const LOOPSY_PHRASES = [
-            "you're okay here",
-            "we can stay a while",
-            "nothing needed",
-            "just being is enough",
-            "this is a gentle place",
-            "no rush at all",
-            "you belong here",
-            "soft and still",
-            "breathe easy",
-            "all is well here",
-            "there's nowhere to be",
-            "rest here a moment"
+            "You're okay here",
+            "We can stay a while",
+            "Nothing needed",
+            "Just being is enough",
+            "This is a gentle place",
+            "No rush at all",
+            "You belong here",
+            "Soft and still",
+            "Breathe easy",
+            "All is well here",
+            "There's nowhere to be",
+            "Rest here a moment",
         ];
 
         // Stage images: stage 0 → loopsy-1.png … stage 4 → loopsy-5.png
