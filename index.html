@@ -149,7 +149,7 @@
         .hero {
             position: relative;
             background: linear-gradient(180deg, #F6F3EE 0%, #EDE8E0 100%);
-            padding: 72px 24px 80px;
+            padding: 44px 24px 72px;
             text-align: center;
             overflow: hidden;
         }
@@ -210,7 +210,7 @@
             width: 148px;
             height: auto;
             display: block;
-            margin: 0 auto 32px;
+            margin: 0 auto 18px;
             animation: loopsyFloat 5.5s ease-in-out infinite;
             filter: drop-shadow(0 8px 24px rgba(100, 80, 140, 0.14));
         }
@@ -220,7 +220,7 @@
             color: #5A5260;
             letter-spacing: 3px;
             font-weight: 500;
-            margin-bottom: 18px;
+            margin-bottom: 12px;
             animation: fadeUp 0.8s ease both;
         }
 
@@ -230,8 +230,20 @@
             font-weight: 400;
             letter-spacing: 1.5px;
             text-align: center;
-            margin: 0 auto;
+            margin: 0 auto 14px;
             animation: fadeUp 0.8s ease 0.15s both;
+        }
+
+        .hero-description {
+            font-size: clamp(13px, 2.8vw, 15px);
+            color: rgba(74, 70, 85, 0.6);
+            font-weight: 300;
+            letter-spacing: 0.3px;
+            text-align: center;
+            margin: 0 auto;
+            max-width: 38ch;
+            line-height: 1.6;
+            animation: fadeUp 0.8s ease 0.28s both;
         }
 
         /* ── Content cards ── */
@@ -530,6 +542,7 @@
         />
         <h1 class="hero-title">loopsy</h1>
         <p class="hero-strapline">Nothing to do. Somewhere to be.</p>
+        <p class="hero-description">A calm, pressure-free space designed to help children regulate through simple sensory activities.</p>
     </header>
 
     <!-- Main content -->
