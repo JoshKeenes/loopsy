@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Loopsy — a calm, sensory web app made by a parent and daughter for children with PDA and autism. No pressure. No winning. Just somewhere to be.">
+    <title>About Loopsy</title>
+    <style>
+        /* ── Reset & base ── */
+        *, *::before, *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #F6F3EE;
+            color: #3D3844;
+            line-height: 1.7;
+            overflow-x: hidden;
+        }
+
+        /* ── Typography scale ── */
+        h1, h2, h3 {
+            font-weight: 500;
+            letter-spacing: -0.2px;
+            color: #3D3844;
+        }
+
+        p {
+            font-size: 17px;
+            color: #4A4655;
+            font-weight: 400;
+            max-width: 62ch;
+        }
+
+        a {
+            color: #7B6FA0;
+            text-decoration: none;
+            border-bottom: 1px solid rgba(123, 111, 160, 0.35);
+            transition: color 0.2s ease, border-color 0.2s ease;
+        }
+
+        a:hover {
+            color: #5A5280;
+            border-color: rgba(90, 82, 128, 0.6);
+        }
+
+        /* ── Layout helpers ── */
+        .container {
+            width: 100%;
+            max-width: 680px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        .section {
+            padding: 72px 0;
+        }
+
+        .section + .section {
+            padding-top: 0;
+        }
+
+        /* ── Floating animation (matches app) ── */
+        @keyframes loopsyFloat {
+            0%, 100% { transform: translateY(0px); }
+            50%       { transform: translateY(-10px); }
+        }
+
+        @keyframes softFloat {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            33%       { transform: translateY(-6px) rotate(1deg); }
+            66%       { transform: translateY(-3px) rotate(-0.5deg); }
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(18px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes shimmer {
+            0%, 100% { opacity: 0.35; }
+            50%       { opacity: 0.6; }
+        }
+
+        @keyframes starPulse {
+            0%, 100% { opacity: 0.2; transform: scale(0.85); }
+            50%       { opacity: 0.55; transform: scale(1.1); }
+        }
+
+        /* ── Nav bar ── */
+        .nav {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(246, 243, 238, 0.88);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(58, 58, 58, 0.07);
+            padding: 14px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .nav-logo {
+            font-size: 22px;
+            font-weight: 500;
+            color: #5A5260;
+            letter-spacing: 2px;
+            text-decoration: none;
+            border: none;
+        }
+
+        .nav-logo:hover {
+            color: #5A5260;
+            border: none;
+        }
+
+        .nav-back {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 15px;
+            color: #6B6578;
+            font-weight: 500;
+            text-decoration: none;
+            border: none;
+            padding: 8px 16px;
+            background: rgba(58, 58, 58, 0.07);
+            border-radius: 20px;
+            transition: background 0.2s ease;
+        }
+
+        .nav-back:hover {
+            background: rgba(58, 58, 58, 0.12);
+            color: #3D3844;
+            border: none;
+        }
+
+        /* ── Hero ── */
+        .hero {
+            position: relative;
+            background: linear-gradient(180deg, #F6F3EE 0%, #EDE8E0 100%);
+            padding: 72px 24px 80px;
+            text-align: center;
+            overflow: hidden;
+        }
+
+        /* Soft decorative hills (matches app home screen vibe) */
+        .hero-hill {
+            position: absolute;
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .hero-hill-1 {
+            width: 420px;
+            height: 220px;
+            bottom: -80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: radial-gradient(ellipse, rgba(195, 175, 225, 0.18) 0%, transparent 70%);
+        }
+
+        .hero-hill-2 {
+            width: 260px;
+            height: 130px;
+            bottom: -40px;
+            left: 10%;
+            background: radial-gradient(ellipse, rgba(175, 210, 200, 0.15) 0%, transparent 70%);
+            animation: shimmer 7s ease-in-out infinite;
+        }
+
+        .hero-hill-3 {
+            width: 200px;
+            height: 100px;
+            bottom: -30px;
+            right: 8%;
+            background: radial-gradient(ellipse, rgba(220, 185, 165, 0.18) 0%, transparent 70%);
+            animation: shimmer 9s ease-in-out infinite 2s;
+        }
+
+        /* Decorative stars */
+        .star {
+            position: absolute;
+            pointer-events: none;
+            animation: starPulse ease-in-out infinite;
+        }
+
+        .star::before {
+            content: '✦';
+            display: block;
+            color: rgba(155, 135, 185, 0.4);
+        }
+
+        .star-1 { top: 18%; left: 12%; font-size: 11px; animation-duration: 4.5s; }
+        .star-2 { top: 28%; right: 14%; font-size: 8px;  animation-duration: 6s; animation-delay: 1.2s; }
+        .star-3 { top: 55%; left: 7%;  font-size: 7px;  animation-duration: 5.5s; animation-delay: 0.7s; }
+        .star-4 { top: 42%; right: 8%; font-size: 10px; animation-duration: 7s; animation-delay: 2s; }
+
+        .hero-character {
+            width: 148px;
+            height: auto;
+            display: block;
+            margin: 0 auto 32px;
+            animation: loopsyFloat 5.5s ease-in-out infinite;
+            filter: drop-shadow(0 8px 24px rgba(100, 80, 140, 0.14));
+        }
+
+        .hero-title {
+            font-size: clamp(38px, 8vw, 56px);
+            color: #5A5260;
+            letter-spacing: 3px;
+            font-weight: 500;
+            margin-bottom: 18px;
+            animation: fadeUp 0.8s ease both;
+        }
+
+        .hero-strapline {
+            font-size: clamp(15px, 3.5vw, 19px);
+            color: #7B6FA0;
+            font-weight: 400;
+            letter-spacing: 1.5px;
+            animation: fadeUp 0.8s ease 0.15s both;
+        }
+
+        /* ── Content cards ── */
+        .card {
+            background: rgba(255, 255, 255, 0.72);
+            border: 1px solid rgba(58, 58, 58, 0.07);
+            border-radius: 24px;
+            padding: 40px 36px;
+            margin-bottom: 16px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        @media (max-width: 480px) {
+            .card {
+                padding: 28px 22px;
+            }
+        }
+
+        /* Soft tinted left edge per card */
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; bottom: 0;
+            width: 4px;
+            border-radius: 4px 0 0 4px;
+            opacity: 0.6;
+        }
+
+        .card-purple::before { background: linear-gradient(180deg, #C8A0E0, #9878C0); }
+        .card-green::before  { background: linear-gradient(180deg, #8ECCA8, #55956E); }
+        .card-blue::before   { background: linear-gradient(180deg, #8ABCDC, #4C8AAC); }
+        .card-warm::before   { background: linear-gradient(180deg, #F4C4A0, #D8956A); }
+        .card-rose::before   { background: linear-gradient(180deg, #F4C4D8, #C07898); }
+
+        .section-eyebrow {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 2.5px;
+            text-transform: uppercase;
+            color: #9888B8;
+            margin-bottom: 12px;
+        }
+
+        .section-heading {
+            font-size: clamp(22px, 5vw, 28px);
+            color: #3D3844;
+            margin-bottom: 20px;
+            font-weight: 500;
+            line-height: 1.3;
+        }
+
+        .section-body p {
+            margin-bottom: 16px;
+        }
+
+        .section-body p:last-child {
+            margin-bottom: 0;
+        }
+
+        /* ── PDA callout block ── */
+        .pda-callout {
+            background: rgba(195, 175, 225, 0.12);
+            border: 1px solid rgba(155, 135, 185, 0.2);
+            border-radius: 16px;
+            padding: 20px 24px;
+            margin: 24px 0;
+        }
+
+        .pda-callout p {
+            font-size: 16px;
+            color: #5A4E78;
+            margin: 0;
+        }
+
+        /* ── Quote pull ── */
+        .pull-quote {
+            font-size: clamp(18px, 4vw, 22px);
+            font-weight: 400;
+            color: #6B5F88;
+            letter-spacing: 0.2px;
+            line-height: 1.55;
+            padding: 28px 0 20px;
+            border-top: 1px solid rgba(155, 135, 185, 0.2);
+            border-bottom: 1px solid rgba(155, 135, 185, 0.2);
+            margin: 28px 0;
+            font-style: italic;
+        }
+
+        /* ── Character trio (looking forward section) ── */
+        .character-row {
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            gap: 8px;
+            margin: 36px 0 8px;
+        }
+
+        .character-row img {
+            height: auto;
+            display: block;
+            filter: drop-shadow(0 4px 12px rgba(100, 80, 140, 0.12));
+        }
+
+        .char-sm {
+            width: 58px;
+            animation: softFloat 6s ease-in-out infinite;
+        }
+
+        .char-md {
+            width: 78px;
+            animation: softFloat 5s ease-in-out infinite 0.6s;
+        }
+
+        .char-lg {
+            width: 96px;
+            animation: softFloat 7s ease-in-out infinite 1.2s;
+        }
+
+        /* ── Principles row ── */
+        .principles {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 24px;
+        }
+
+        .principle-chip {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.85);
+            border: 1px solid rgba(58, 58, 58, 0.08);
+            border-radius: 999px;
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #4A4655;
+        }
+
+        .principle-chip .chip-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        /* ── External link button ── */
+        .link-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 20px;
+            padding: 11px 20px;
+            background: rgba(195, 175, 225, 0.18);
+            border: 1px solid rgba(155, 135, 185, 0.3);
+            border-radius: 999px;
+            font-size: 15px;
+            font-weight: 500;
+            color: #6B5F88;
+            text-decoration: none;
+            border-bottom: 1px solid rgba(155, 135, 185, 0.3);
+            transition: background 0.2s ease, color 0.2s ease;
+        }
+
+        .link-btn:hover {
+            background: rgba(195, 175, 225, 0.3);
+            color: #5A4E78;
+            border-color: rgba(155, 135, 185, 0.45);
+        }
+
+        .link-btn svg {
+            flex-shrink: 0;
+            opacity: 0.65;
+        }
+
+        /* ── Play CTA strip ── */
+        .play-strip {
+            background: linear-gradient(135deg, rgba(195, 175, 225, 0.22) 0%, rgba(175, 210, 200, 0.18) 100%);
+            border: 1px solid rgba(155, 135, 185, 0.18);
+            border-radius: 24px;
+            padding: 40px 36px;
+            text-align: center;
+            margin: 16px 0 0;
+        }
+
+        @media (max-width: 480px) {
+            .play-strip {
+                padding: 28px 22px;
+            }
+        }
+
+        .play-strip h2 {
+            font-size: clamp(20px, 5vw, 26px);
+            color: #3D3844;
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+
+        .play-strip p {
+            font-size: 16px;
+            color: #5A5068;
+            margin: 0 auto 24px;
+        }
+
+        .play-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 30px;
+            background: rgba(255, 255, 255, 0.82);
+            border: 1px solid rgba(58, 58, 58, 0.1);
+            border-radius: 999px;
+            font-size: 17px;
+            font-weight: 500;
+            color: #5A5260;
+            text-decoration: none;
+            border-bottom: 1px solid rgba(58, 58, 58, 0.1);
+            transition: background 0.2s ease, transform 0.15s ease;
+            letter-spacing: 0.5px;
+        }
+
+        .play-btn:hover {
+            background: rgba(255, 255, 255, 0.98);
+            transform: scale(1.02);
+            color: #3D3844;
+            border-color: rgba(58, 58, 58, 0.1);
+        }
+
+        /* ── Footer ── */
+        .footer {
+            text-align: center;
+            padding: 48px 24px 56px;
+            color: rgba(74, 70, 85, 0.5);
+            font-size: 14px;
+        }
+
+        .footer-logo {
+            display: block;
+            font-size: 20px;
+            color: rgba(90, 82, 96, 0.45);
+            letter-spacing: 2.5px;
+            font-weight: 500;
+            margin-bottom: 10px;
+        }
+
+        /* ── Divider ── */
+        .divider {
+            width: 40px;
+            height: 2px;
+            background: rgba(155, 135, 185, 0.25);
+            border-radius: 2px;
+            margin: 28px 0;
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 600px) {
+            .section {
+                padding: 48px 0;
+            }
+
+            .hero {
+                padding: 56px 24px 64px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Nav -->
+    <nav class="nav" role="navigation" aria-label="Site navigation">
+        <a href="/" class="nav-logo" aria-label="Loopsy home">loopsy</a>
+        <a href="/" class="nav-back" aria-label="Open the app">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <polygon points="5 3 19 12 5 21 5 3"/>
+            </svg>
+            Open the app
+        </a>
+    </nav>
+
+    <!-- Hero -->
+    <header class="hero" role="banner">
+        <!-- Decorative shapes -->
+        <div class="hero-hill hero-hill-1" aria-hidden="true"></div>
+        <div class="hero-hill hero-hill-2" aria-hidden="true"></div>
+        <div class="hero-hill hero-hill-3" aria-hidden="true"></div>
+        <div class="star star-1" aria-hidden="true"></div>
+        <div class="star star-2" aria-hidden="true"></div>
+        <div class="star star-3" aria-hidden="true"></div>
+        <div class="star star-4" aria-hidden="true"></div>
+
+        <img
+            src="assets/loopsy/loopsy-sleeping.png"
+            alt="Loopsy character, resting gently"
+            class="hero-character"
+        />
+        <h1 class="hero-title">loopsy</h1>
+        <p class="hero-strapline">Nothing to do. Somewhere to be.</p>
+    </header>
+
+    <!-- Main content -->
+    <main>
+        <div class="container">
+
+            <!-- Section 1: What is PDA -->
+            <section class="section" aria-labelledby="pda-heading">
+                <div class="card card-purple">
+                    <p class="section-eyebrow">A little background</p>
+                    <h2 class="section-heading" id="pda-heading">What is PDA?</h2>
+                    <div class="section-body">
+                        <p>
+                            PDA stands for Pathological Demand Avoidance — a profile of autism where everyday demands, even small or well-meaning ones, can feel completely overwhelming. It's not about refusing to cooperate. It's about a nervous system that goes into survival mode when it senses pressure.
+                        </p>
+                        <div class="pda-callout">
+                            <p>
+                                Things that seem simple — being asked to put your shoes on, choosing what to eat, even being told something good is coming — can trigger intense anxiety in a child with PDA. The demand itself isn't the problem. It's how the brain processes it.
+                            </p>
+                        </div>
+                        <p>
+                            Children with PDA often need to feel in control of their own world. They do best in low-demand environments where they can make choices freely, without pressure, and where it's completely okay to stop, rest, or do nothing at all.
+                        </p>
+                        <p>
+                            Understanding PDA changes everything. It shifts the question from "why won't they just do it?" to "how can we make this feel safe?"
+                        </p>
+                        <a
+                            href="https://www.pdasociety.org.uk"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="link-btn"
+                            aria-label="Visit the PDA Society website (opens in new tab)"
+                        >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                                <polyline points="15 3 21 3 21 9"/>
+                                <line x1="10" y1="14" x2="21" y2="3"/>
+                            </svg>
+                            Learn more at PDA Society
+                        </a>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 2: Why we made Loopsy -->
+            <section class="section" aria-labelledby="story-heading">
+                <div class="card card-green">
+                    <p class="section-eyebrow">The story behind it</p>
+                    <h2 class="section-heading" id="story-heading">Why we made Loopsy</h2>
+                    <div class="section-body">
+                        <p>
+                            Loopsy came out of lived experience — the kind that happens quietly, in difficult moments, when you're trying to find something that helps.
+                        </p>
+                        <p>
+                            Watching a child you love go into shutdown — not because of anything dramatic, but because the weight of ordinary demands has just become too much — is one of the harder things a parent can sit with. You want to help. You want to offer something. But most of the options feel like they ask too much in return.
+                        </p>
+
+                        <div class="pull-quote">
+                            "Most apps were too loud, too busy, too full of goals and progress bars and things you had to do next. We wanted something that just&hellip; waited."
+                        </div>
+
+                        <p>
+                            So it started as a small idea between a parent and a daughter — sitting together, sketching out what something gentler might feel like. What if there were no tasks? No timers? No stars to collect or levels to unlock? What if the app just existed, quietly, and let you come to it?
+                        </p>
+                        <p>
+                            We built the activities we wished existed. Soft bubbles to pop. Patterns to tap into. A breathing circle that doesn't demand you follow it. A place to colour the screen, slowly or quickly, with no result to achieve. Small loops of calm that don't ask anything back.
+                        </p>
+                        <p>
+                            Loopsy is that thing.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 3: The idea -->
+            <section class="section" aria-labelledby="idea-heading">
+                <div class="card card-blue">
+                    <p class="section-eyebrow">How it works</p>
+                    <h2 class="section-heading" id="idea-heading">The idea behind Loopsy</h2>
+                    <div class="section-body">
+                        <p>
+                            The name comes from the idea of loops — small, repetitive, self-contained things. A breath in, a breath out. A tap that makes a dot. A bubble that floats up and disappears. Things that have a beginning and an end but don't lead anywhere in particular. Things you can do once, or a hundred times, and it doesn't matter either way.
+                        </p>
+                        <p>
+                            Loopsy has a gentle character who grows softly as children explore — not as a reward for doing things right, but as a quiet reflection of the time spent. There's no score, no ranking, no comparison. Loopsy resets each session intentionally, so there's never a sense of falling behind or needing to catch up.
+                        </p>
+                        <p>
+                            You can dip in for thirty seconds or stay for twenty minutes. You can close it in the middle of something. You can come back tomorrow or not at all. Nothing is lost. Nothing is waiting for you.
+                        </p>
+
+                        <div class="divider" aria-hidden="true"></div>
+
+                        <p>The things Loopsy is built around:</p>
+                        <div class="principles" role="list">
+                            <div class="principle-chip" role="listitem">
+                                <span class="chip-dot" style="background: #C8A0E0;" aria-hidden="true"></span>
+                                No pressure
+                            </div>
+                            <div class="principle-chip" role="listitem">
+                                <span class="chip-dot" style="background: #8ECCA8;" aria-hidden="true"></span>
+                                No winning
+                            </div>
+                            <div class="principle-chip" role="listitem">
+                                <span class="chip-dot" style="background: #8ABCDC;" aria-hidden="true"></span>
+                                No failure
+                            </div>
+                            <div class="principle-chip" role="listitem">
+                                <span class="chip-dot" style="background: #F4C4D8;" aria-hidden="true"></span>
+                                No next thing
+                            </div>
+                            <div class="principle-chip" role="listitem">
+                                <span class="chip-dot" style="background: #F4D5A0;" aria-hidden="true"></span>
+                                No time limit
+                            </div>
+                            <div class="principle-chip" role="listitem">
+                                <span class="chip-dot" style="background: #C4D8F4;" aria-hidden="true"></span>
+                                No wrong answer
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 4: Looking forward -->
+            <section class="section" aria-labelledby="forward-heading">
+                <div class="card card-warm">
+                    <p class="section-eyebrow">Where we are now</p>
+                    <h2 class="section-heading" id="forward-heading">Looking forward</h2>
+                    <div class="section-body">
+
+                        <!-- Loopsy character trio -->
+                        <div class="character-row" aria-hidden="true" role="presentation">
+                            <img src="assets/loopsy/loopsy-2.png" alt="" class="char-sm" />
+                            <img src="assets/loopsy/loopsy-4.png" alt="" class="char-lg" />
+                            <img src="assets/loopsy/loopsy-3.png" alt="" class="char-md" />
+                        </div>
+
+                        <p>
+                            Loopsy is still a small, evolving thing. It was made with care and with honesty, but it isn't finished — and it probably never will be entirely. That feels right.
+                        </p>
+                        <p>
+                            If you're a parent, a carer, a teacher, or a neurodivergent person who has thoughts about what would help — what's missing, what feels wrong, what might make this quieter or kinder — we'd genuinely love to hear from you. This was built from one family's experience. It will only get better by hearing from others.
+                        </p>
+                        <p>
+                            There are no grand plans here. Just a quiet hope that this reaches the children who need somewhere to be, and that it feels safe when it gets there.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Play CTA -->
+                <div class="play-strip" role="complementary" aria-label="Try Loopsy">
+                    <h2>Try Loopsy</h2>
+                    <p>Free. No sign-up. No account. Just open it.</p>
+                    <a href="/" class="play-btn" aria-label="Open the Loopsy app">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <polygon points="5 3 19 12 5 21 5 3"/>
+                        </svg>
+                        Open Loopsy
+                    </a>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer" role="contentinfo">
+        <span class="footer-logo" aria-label="Loopsy">loopsy</span>
+        <p>Made with care &mdash; for children who need somewhere to be.</p>
+    </footer>
+
+</body>
+</html>
