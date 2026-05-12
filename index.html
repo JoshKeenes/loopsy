@@ -439,6 +439,121 @@
         }
 
         /* ── Play CTA strip ── */
+        /* ── Install block ── */
+        .install-block {
+            background: rgba(255, 255, 255, 0.72);
+            border: 1px solid rgba(58, 58, 58, 0.07);
+            border-radius: 24px;
+            padding: 36px 36px 32px;
+            margin: 16px 0 0;
+        }
+
+        @media (max-width: 480px) {
+            .install-block { padding: 24px 20px 22px; }
+        }
+
+        .install-intro {
+            font-size: 11px;
+            font-weight: 600;
+            color: #9888B8;
+            letter-spacing: 2.5px;
+            text-transform: uppercase;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .install-heading {
+            font-size: clamp(15px, 3.5vw, 18px);
+            color: #3D3844;
+            font-weight: 400;
+            text-align: center;
+            margin-bottom: 28px;
+            line-height: 1.5;
+        }
+
+        .install-cols {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+
+        @media (max-width: 420px) {
+            .install-cols { grid-template-columns: 1fr; }
+        }
+
+        .install-col {
+            background: rgba(246, 243, 238, 0.7);
+            border: 1px solid rgba(58, 58, 58, 0.07);
+            border-radius: 16px;
+            padding: 20px 16px 18px;
+        }
+
+        .install-col-header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 16px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid rgba(58, 58, 58, 0.07);
+        }
+
+        .install-col-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: #3D3844;
+            letter-spacing: 0.2px;
+        }
+
+        .install-steps {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .install-step {
+            display: flex;
+            gap: 9px;
+            align-items: flex-start;
+        }
+
+        .install-step-num {
+            flex-shrink: 0;
+            width: 19px;
+            height: 19px;
+            border-radius: 50%;
+            background: rgba(155, 135, 185, 0.16);
+            font-size: 10px;
+            font-weight: 700;
+            color: #7B6FA0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 2px;
+        }
+
+        .install-step p {
+            font-size: 13px;
+            color: #4A4655;
+            line-height: 1.55;
+            max-width: none;
+            margin: 0;
+        }
+
+        .install-step strong {
+            color: #3D3844;
+            font-weight: 600;
+        }
+
+        .install-note {
+            font-size: 12.5px;
+            color: rgba(74, 70, 85, 0.45);
+            text-align: center;
+            margin: 20px auto 0;
+            max-width: none;
+        }
+
         .play-strip {
             background: linear-gradient(135deg, rgba(195, 175, 225, 0.22) 0%, rgba(175, 210, 200, 0.18) 100%);
             border: 1px solid rgba(155, 135, 185, 0.18);
@@ -750,6 +865,75 @@
                         </svg>
                         Open loopsy
                     </a>
+                </div>
+
+                <!-- Install instructions -->
+                <div class="install-block">
+                    <p class="install-intro">Save to your phone</p>
+                    <p class="install-heading">loopsy isn't in an app store yet, but you can save it to your home screen and use it just like an app - even offline.</p>
+
+                    <div class="install-cols">
+
+                        <!-- Apple / iOS -->
+                        <div class="install-col">
+                            <div class="install-col-header">
+                                <!-- Apple logo -->
+                                <svg width="36" height="36" viewBox="0 0 814 1000" fill="#3D3844" aria-label="Apple iOS" role="img">
+                                    <path d="M788.1 340.9c-5.8 4.5-108.2 62.2-108.2 190.5 0 148.4 130.3 200.9 134.2 202.2-.6 3.2-20.7 71.9-68.7 141.9-42.8 61.6-87.5 123.1-155.5 123.1s-85.5-39.5-164-39.5c-76 0-103.7 40.8-165.9 40.8s-105-57.8-155.5-127.4C46 790.7 0 663 0 541.8c0-207.5 135.4-317.3 269-317.3 70.1 0 128.4 46.4 172.5 46.4 42.8 0 109.3-49 192.5-49 34.1-.1 106.2 4.3 162.1 67zM554.1 158.4c27.9-33.3 48.1-79.4 48.1-125.5 0-6.4-.6-12.8-1.9-18 0-.6-.1-1.3-.1-1.9-44.9 1.9-98.1 30.2-131.5 66.6-25.7 28.5-50.4 74.6-50.4 121.4 0 7.1 1.3 14.1 1.9 16.4.6.1 1.3.1 1.9.1 41-.1 94.9-27.3 132-59.1z"/>
+                                </svg>
+                                <span class="install-col-name">iPhone / iPad</span>
+                            </div>
+                            <ol class="install-steps" aria-label="Steps to install on iPhone or iPad">
+                                <li class="install-step">
+                                    <span class="install-step-num" aria-hidden="true">1</span>
+                                    <p>Open <strong>loopsy.co.uk</strong> in <strong>Safari</strong> (must be Safari, not Chrome)</p>
+                                </li>
+                                <li class="install-step">
+                                    <span class="install-step-num" aria-hidden="true">2</span>
+                                    <p>Tap the <strong>Share</strong> button at the bottom of the screen (the box with an arrow pointing up)</p>
+                                </li>
+                                <li class="install-step">
+                                    <span class="install-step-num" aria-hidden="true">3</span>
+                                    <p>Scroll down and tap <strong>Add to Home Screen</strong></p>
+                                </li>
+                                <li class="install-step">
+                                    <span class="install-step-num" aria-hidden="true">4</span>
+                                    <p>Tap <strong>Add</strong> in the top right - loopsy will appear on your home screen like any other app</p>
+                                </li>
+                            </ol>
+                        </div>
+
+                        <!-- Android -->
+                        <div class="install-col">
+                            <div class="install-col-header">
+                                <!-- Android logo -->
+                                <svg width="36" height="36" viewBox="0 0 24 24" fill="#3D3844" aria-label="Android" role="img">
+                                    <path d="M17.523 15.341a.697.697 0 0 1-.696.697.697.697 0 0 1-.697-.697.697.697 0 0 1 .697-.696.697.697 0 0 1 .696.696M7.17 15.341a.697.697 0 0 1-.697.697.697.697 0 0 1-.696-.697.697.697 0 0 1 .696-.696.697.697 0 0 1 .697.696M17.716 5.556l1.437-2.49a.298.298 0 0 0-.109-.407.298.298 0 0 0-.407.109l-1.455 2.52a9.01 9.01 0 0 0-3.635-.756 9.01 9.01 0 0 0-3.634.756L8.458 2.768a.298.298 0 0 0-.407-.109.298.298 0 0 0-.109.407l1.437 2.49C6.6 6.97 4.9 9.374 4.9 12.166h14.2c0-2.792-1.7-5.196-4.384-6.61"/>
+                                </svg>
+                                <span class="install-col-name">Android</span>
+                            </div>
+                            <ol class="install-steps" aria-label="Steps to install on Android">
+                                <li class="install-step">
+                                    <span class="install-step-num" aria-hidden="true">1</span>
+                                    <p>Open <strong>loopsy.co.uk</strong> in <strong>Chrome</strong></p>
+                                </li>
+                                <li class="install-step">
+                                    <span class="install-step-num" aria-hidden="true">2</span>
+                                    <p>Tap the <strong>three dots</strong> menu in the top right corner</p>
+                                </li>
+                                <li class="install-step">
+                                    <span class="install-step-num" aria-hidden="true">3</span>
+                                    <p>Tap <strong>Add to Home screen</strong></p>
+                                </li>
+                                <li class="install-step">
+                                    <span class="install-step-num" aria-hidden="true">4</span>
+                                    <p>Tap <strong>Add</strong> - loopsy will appear on your home screen and work offline too</p>
+                                </li>
+                            </ol>
+                        </div>
+
+                    </div>
+                    <p class="install-note">Once saved, it opens full screen with no browser bars - just like a real app.</p>
                 </div>
             </section>
 
