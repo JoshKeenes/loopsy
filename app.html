@@ -5,7 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <title>Loopsy</title>
+
+    <title>loopsy - play</title>
+    <meta name="description" content="loopsy - a calm, pressure-free sensory space for children. No tasks, no timers, no pressure. Just somewhere to be.">
+
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://www.loopsy.co.uk/app">
+    <meta property="og:title" content="loopsy - play">
+    <meta property="og:description" content="A calm, pressure-free sensory space for children with PDA and autism. Just somewhere to be.">
+    <meta property="og:image" content="https://www.loopsy.co.uk/assets/loopsy/loopsy-sleeping.png">
+
+    <link rel="canonical" href="https://www.loopsy.co.uk/app">
     <style>
         * {
             margin: 0;
@@ -1113,39 +1123,35 @@
             </svg>
         );
 
-        // Dashboard welcome banner — cycles PDA-friendly affirmations; first is always the greeting
+        // Dashboard banner messages — module-level so they persist across remounts
+        const BANNER_MESSAGES = [
+            "Hey, what shall we play?",
+            "You're in charge here",
+            "Take your time, no rush",
+            "You choose what happens next",
+            "There's no right or wrong today",
+            "This is your space",
+            "Go at your own pace",
+            "You're safe here",
+            "It's okay to just be",
+            "Nothing has to happen today",
+            "You get to decide",
+            "Everything is okay right now",
+            "Stay as long as you like",
+            "This is a calm place",
+            "No pressure, just play",
+        ];
+        // Tracks which message to show next — increments each time dashboard is visited
+        let _bannerVisitCount = 0;
+
+        // Dashboard welcome banner — shows next message each time user returns from a game
         function DashboardBanner() {
-            const MESSAGES = [
-                "Hey, what shall we play?",       // always shown first on app open
-                "You're in charge here",
-                "Take your time, no rush",
-                "You choose what happens next",
-                "There's no right or wrong today",
-                "This is your space",
-                "Go at your own pace",
-                "You're safe here",
-                "It's okay to just be",
-                "Nothing has to happen today",
-                "You get to decide",
-                "Everything is okay right now",
-                "Stay as long as you like",
-                "This is a calm place",
-                "No pressure, just play",
-            ];
-
-            const [msgIdx, setMsgIdx] = useState(0);
-            const [visible, setVisible] = useState(true);
-
-            useEffect(() => {
-                const id = setInterval(() => {
-                    setVisible(false);
-                    setTimeout(() => {
-                        setMsgIdx(prev => (prev + 1) % MESSAGES.length);
-                        setVisible(true);
-                    }, 550);
-                }, 7000);
-                return () => clearInterval(id);
-            }, []);
+            // Grab the message for this visit on mount, then advance the counter
+            const [msgIdx] = useState(() => {
+                const idx = _bannerVisitCount % BANNER_MESSAGES.length;
+                _bannerVisitCount++;
+                return idx;
+            });
 
             return (
                 <div className="dashboard-banner" role="status" aria-live="polite">
@@ -1153,10 +1159,9 @@
                     <div className="dashboard-banner-overlay" aria-hidden="true" />
                     <div
                         className="dashboard-banner-text"
-                        style={{ opacity: visible ? 1 : 0 }}
-                        aria-label={MESSAGES[msgIdx]}
+                        aria-label={BANNER_MESSAGES[msgIdx]}
                     >
-                        {MESSAGES[msgIdx]}
+                        {BANNER_MESSAGES[msgIdx]}
                     </div>
                 </div>
             );
